@@ -46,7 +46,7 @@ exts = [Extension(
     )]
 
 setup(
-    name="boxtree-fmm3d",
+    name="boxtree.fmm3d",
     ext_modules=exts,
     packages=find_namespace_packages(include=["boxtree.*"]),
 )
