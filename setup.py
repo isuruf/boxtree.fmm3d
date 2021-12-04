@@ -21,6 +21,7 @@ if not USE_EXTERNAL_FMM3D:
         'FMM3D/src/Helmholtz/helmkernels_dr.f',
         'FMM3D/src/Laplace/lapkernels_dr.f',
         'FMM3D/src/Helmholtz/hwts3.f',
+        'FMM3D/src/Helmholtz/quadread.f',
         ] + glob("FMM3D/src/**/*_fast.f")
     sources += glob("FMM3D/src/Laplace/*.f") + glob("FMM3D/src/Helmholtz/*.f")
     sources += glob("FMM3D/src/Common/*.f")
