@@ -6,7 +6,8 @@ from glob import glob
 import os
 
 # generate fortran.pyf using
-# f2py -m fortran -h boxtree/fmm3d/fortran.pyf FMM3D/src/Laplace/lfmm3d.f FMM3D/src/Helmholtz/hfmm3d.f
+# f2py -m fortran -h boxtree/fmm3d/fortran.pyf FMM3D/src/Laplace/lfmm3d.f \
+#   FMM3D/src/Helmholtz/hfmm3d.f FMM3D/src/Common/pts_tree3d.f
 
 USE_EXTERNAL_FMM3D = os.getenv("BOXTREE_FMM3D_USE_EXTERNAL", "0") == "1"
 
@@ -36,7 +37,7 @@ print(sources)
 exts = [Extension(
     name="boxtree.fmm3d.fortran",
     sources=sources,
-    f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", ":"],
+    f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort", ":"],
     libraries=libraries,
     library_dirs=library_dirs,
     extra_link_args=["-fopenmp"],

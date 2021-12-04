@@ -183,6 +183,90 @@ python module fortran ! in
             double precision dimension(nlege + 1,nlege + 1) :: wlege
             integer, optional,check((shape(wlege,0)-1)==nlege),depend(wlege) :: nlege=(shape(wlege,0)-1)
         end subroutine hfmm3dexpc_direct
+        subroutine pts_tree_mem(src,ns,targ,nt,idivflag,ndiv,nlmin,nlmax,ifunif,iper,nlevels,nboxes,ltree) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            double precision dimension(3,ns) :: src
+            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            double precision dimension(3,nt) :: targ
+            integer, optional,check(shape(targ,1)==nt),depend(targ) :: nt=shape(targ,1)
+            integer :: idivflag
+            integer :: ndiv
+            integer :: nlmin
+            integer :: nlmax
+            integer :: ifunif
+            integer :: iper
+            integer :: nlevels
+            integer :: nboxes
+            integer*8 :: ltree
+        end subroutine pts_tree_mem
+        subroutine pts_tree_build(src,ns,targ,nt,idivflag,ndiv,nlmin,nlmax,ifunif,iper,nlevels,nboxes,ltree,itree,iptr,centers,boxsize) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            double precision dimension(3,ns) :: src
+            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            double precision dimension(3,nt) :: targ
+            integer, optional,check(shape(targ,1)==nt),depend(targ) :: nt=shape(targ,1)
+            integer :: idivflag
+            integer :: ndiv
+            integer :: nlmin
+            integer :: nlmax
+            integer :: ifunif
+            integer :: iper
+            integer, optional,check((len(boxsize)-1)>=nlevels),depend(boxsize) :: nlevels=(len(boxsize)-1)
+            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
+            integer dimension(ltree) :: itree
+            integer*8 dimension(8) :: iptr
+            double precision dimension(3,nboxes) :: centers
+            double precision dimension(nlevels + 1) :: boxsize
+        end subroutine pts_tree_build
+        subroutine sort_pts_to_children(ibox,nboxes,centers,ichild,src,ns,isrc,isrcse) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            integer :: ibox
+            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            double precision dimension(3,nboxes) :: centers
+            integer dimension(8,nboxes),depend(nboxes) :: ichild
+            double precision dimension(3,ns) :: src
+            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            integer dimension(ns),depend(ns) :: isrc
+            integer dimension(2,nboxes),depend(nboxes) :: isrcse
+        end subroutine sort_pts_to_children
+        subroutine pts_tree_fix_lr(centers,nlevels,nboxes,boxsize,nbmax,nlmax,iper,laddr,ilevel,iparent,nchild,ichild,nnbors,nbors) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            double precision dimension(3,nbmax) :: centers
+            integer :: nlevels
+            integer :: nboxes
+            double precision dimension(nlmax + 1) :: boxsize
+            integer, optional,check(shape(centers,1)==nbmax),depend(centers) :: nbmax=shape(centers,1)
+            integer, optional,check((len(boxsize)-1)>=nlmax),depend(boxsize) :: nlmax=(len(boxsize)-1)
+            integer :: iper
+            integer dimension(2,nlmax + 1),depend(nlmax) :: laddr
+            integer dimension(nbmax),depend(nbmax) :: ilevel
+            integer dimension(nbmax),depend(nbmax) :: iparent
+            integer dimension(nbmax),depend(nbmax) :: nchild
+            integer dimension(8,nbmax),depend(nbmax) :: ichild
+            integer dimension(nbmax),depend(nbmax) :: nnbors
+            integer dimension(27,nbmax),depend(nbmax) :: nbors
+        end subroutine pts_tree_fix_lr
+        subroutine pts_tree_reorg(nboxes,centers,nlevels,laddr,laddrtail,ilevel,iparent,nchild,ichild,iflag) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            double precision dimension(3,nboxes) :: centers
+            integer, optional,check((shape(laddr,1)-1)==nlevels),depend(laddr) :: nlevels=(shape(laddr,1)-1)
+            integer dimension(2,nlevels + 1) :: laddr
+            integer dimension(2,nlevels + 1),depend(nlevels) :: laddrtail
+            integer dimension(nboxes),depend(nboxes) :: ilevel
+            integer dimension(nboxes),depend(nboxes) :: iparent
+            integer dimension(nboxes),depend(nboxes) :: nchild
+            integer dimension(8,nboxes),depend(nboxes) :: ichild
+            integer dimension(nboxes),depend(nboxes) :: iflag
+        end subroutine pts_tree_reorg
+        subroutine pts_tree_sort(n,xys,itree,ltree,nboxes,nlevels,iptr,centers,ixy,ixyse) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
+            integer, optional,check(shape(xys,1)==n),depend(xys) :: n=shape(xys,1)
+            double precision dimension(3,n) :: xys
+            integer dimension(ltree) :: itree
+            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
+            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            integer :: nlevels
+            integer*8 dimension(8) :: iptr
+            double precision dimension(3,nboxes) :: centers
+            integer dimension(n),depend(n) :: ixy
+            integer dimension(2,nboxes),depend(nboxes) :: ixyse
+        end subroutine pts_tree_sort
     end interface 
 end python module fortran
 
