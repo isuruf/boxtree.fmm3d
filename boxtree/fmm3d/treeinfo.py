@@ -2,6 +2,7 @@ import numpy as np
 from boxtree.fmm3d.fortran import pts_tree_sort
 
 def fmm3d_tree_build(tree, trav, queue):
+    # src/Laplace/lfmm3d.f L213-L240
     nlevels = tree.nlevels
     nboxes = tree.nboxes
 
@@ -61,7 +62,7 @@ def fmm3d_tree_build(tree, trav, queue):
         itree[istart:istart+itree[iptr[5] + i - 1]] = \
                 coll_lists[coll_starts[i]:coll_starts[i+1]] + 1
 
-    boxsize = np.zeros(nlevels + 1, dtype=np.int32)
+    boxsize = np.zeros(nlevels + 1, dtype=np.double)
     boxsize[0] = tree.root_extent
     for i in range(nlevels):
         boxsize[i + 1] = boxsize[i] / 2
@@ -106,33 +107,3 @@ def fmm3d_tree_build(tree, trav, queue):
     return itree, iptr, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse
-
-
-import pyopencl as cl
-ctx = cl.create_some_context()
-queue = cl.CommandQueue(ctx)
-
-dims = 3
-nparticles = 500
-
-from pyopencl.clrandom import RanluxGenerator
-rng = RanluxGenerator(queue, seed=15)
-
-from pytools.obj_array import make_obj_array
-particles = make_obj_array([
-    rng.normal(queue, nparticles, dtype=np.float64)
-    for i in range(dims)])
-
-from boxtree import TreeBuilder
-tb = TreeBuilder(ctx)
-tree, _ = tb(queue, particles, max_particles_in_box=5)
-
-from boxtree.traversal import FMMTraversalBuilder
-tg = FMMTraversalBuilder(ctx)
-trav, _ = tg(queue, tree)
-
-itree, ipointer, treecenters, boxsize, \
-    source, nsource, targ, ntarg, expc, nexpc, \
-    isrc, itarg, iexpc, isrcse, itargse, iexpcse \
-            = fmm3d_tree_build(tree, trav, queue)
-
