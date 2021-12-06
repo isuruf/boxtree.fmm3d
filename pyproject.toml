@@ -1,0 +1,13 @@
+[build-system]
+requires = [
+    "setuptools>=40.8.0",
+    "wheel",
+    "oldest-supported-numpy",
+]
+
+[project]
+requires-python = ">=3.7"
+dependencies = [
+    "numpy",
+    "boxtree",
+]
