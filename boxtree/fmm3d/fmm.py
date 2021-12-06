@@ -115,7 +115,7 @@ lmptot = np.zeros(1, dtype=np.int64)
 
 laddr = itree[0: 2*(nlevels+1)].reshape(2, (nlevels + 1), order='F')
 mpalloc(nd=np.int32(nd), laddr=laddr, iaddr=iaddr,
-        nlevels=nlevels, lmptot=lmptot[0], nterms=nterms)
+        nlevels=np.int32(nlevels), lmptot=lmptot, nterms=nterms)
 
-print(lmptot)
-#rmlexp = np.empty(lmptot, dtype=np.double)
+assert lmptot[0] != 0
+rmlexp = np.empty(lmptot, dtype=np.double)

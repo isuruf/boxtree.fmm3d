@@ -3,7 +3,7 @@ from boxtree.fmm3d.fortran import pts_tree_sort
 
 def fmm3d_tree_build(tree, trav, queue):
     # src/Laplace/lfmm3d.f L213-L240
-    nlevels = tree.nlevels
+    nlevels = tree.nlevels - 1
     nboxes = tree.nboxes
 
     box_levels = tree.box_levels.get(queue)
@@ -28,7 +28,7 @@ def fmm3d_tree_build(tree, trav, queue):
 
     itree = np.zeros(ltree, dtype=np.int32)
 
-    for i in range(nlevels):
+    for i in range(nlevels + 1):
         # first box for ith level
         itree[2*i] = tree.level_start_box_nrs[i] + 1
         # last box for ith level
