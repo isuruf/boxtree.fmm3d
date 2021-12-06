@@ -313,6 +313,113 @@ python module fortran ! in
             real*8 :: eps
             integer :: nterms
         end subroutine h3dterms_far
+        subroutine mpalloc(nd,laddr,iaddr,nlevels,lmptot,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer :: nd
+            integer dimension(2,nlevels + 1) :: laddr
+            integer*8 dimension(2,*) :: iaddr
+            integer, optional,check((shape(laddr,1)-1)==nlevels),depend(laddr) :: nlevels=(shape(laddr,1)-1)
+            integer*8 :: lmptot
+            integer dimension(nlevels + 1),depend(nlevels) :: nterms
+        end subroutine mpalloc
+        subroutine dreorderf(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer :: n
+            double precision dimension(ndim,*) :: arr
+            double precision dimension(ndim,*),depend(ndim) :: arrsort
+            integer dimension(*) :: iarr
+        end subroutine dreorderf
+        subroutine dreorderi(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer :: n
+            double precision dimension(ndim,*) :: arr
+            double precision dimension(ndim,*),depend(ndim) :: arrsort
+            integer dimension(*) :: iarr
+        end subroutine dreorderi
+        subroutine ireorderf(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer :: n
+            integer dimension(ndim,*) :: arr
+            integer dimension(ndim,*),depend(ndim) :: arrsort
+            integer dimension(*) :: iarr
+        end subroutine ireorderf
+        subroutine ireorderi(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer :: n
+            integer dimension(ndim,*) :: arr
+            integer dimension(ndim,*),depend(ndim) :: arrsort
+            integer dimension(*) :: iarr
+        end subroutine ireorderi
+        subroutine drescale(n,a,r) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(len(a)>=n),depend(a) :: n=len(a)
+            real*8 dimension(n) :: a
+            real*8 :: r
+        end subroutine drescale
+        subroutine mpzero(nd,mpole,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(mpole,0)==nd),depend(mpole) :: nd=shape(mpole,0)
+            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpole
+            integer, optional,check((shape(mpole,1)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,1)-1)
+        end subroutine mpzero
+        subroutine mpadd(nd,mpolein,mpoleout,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(mpolein,0)==nd),depend(mpolein) :: nd=shape(mpolein,0)
+            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpolein
+            double complex dimension(nd,nterms + 1,2 * nterms + 1),depend(nd,nterms,nterms) :: mpoleout
+            integer, optional,check((shape(mpolein,1)-1)==nterms),depend(mpolein) :: nterms=(shape(mpolein,1)-1)
+        end subroutine mpadd
+        subroutine mpscale(nd,nterms,mpolein,rsc,mpoleout) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check(shape(mpolein,0)==nd),depend(mpolein) :: nd=shape(mpolein,0)
+            integer, optional,check((shape(mpolein,1)-1)==nterms),depend(mpolein) :: nterms=(shape(mpolein,1)-1)
+            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpolein
+            double precision dimension(nterms + 1),depend(nterms) :: rsc
+            double complex dimension(nd,nterms + 1,2 * nterms + 1),depend(nd,nterms,nterms) :: mpoleout
+        end subroutine mpscale
+        subroutine cart2polar(zat,r,theta,phi) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            real*8 dimension(3) :: zat
+            real*8 :: r
+            real*8 :: theta
+            real*8 :: phi
+        end subroutine cart2polar
+        subroutine getsqrtbinomialcoeffs(n,dc) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check((shape(dc,0)-1)==n),depend(dc) :: n=(shape(dc,0)-1)
+            real*8 dimension(n + 1,n + 1) :: dc
+        end subroutine getsqrtbinomialcoeffs
+        subroutine getpwrotmat(nterms,carray,rdpi2,rdmpi2,rdsq3,rdmsq3,dc) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check((shape(carray,0)-1)/(4)==nterms),depend(carray) :: nterms=(shape(carray,0)-1)/(4)
+            double precision dimension(4 * nterms + 1,4 * nterms + 1) :: carray
+            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdpi2
+            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdmpi2
+            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdsq3
+            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdmsq3
+            double precision dimension(4 * nterms + 1,4 * nterms + 1),depend(nterms,nterms) :: dc
+        end subroutine getpwrotmat
+        subroutine zflip(nterms,mpole,mrotate) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check((shape(mpole,0)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,0)-1)
+            double complex dimension(nterms + 1,nterms + 1) :: mpole
+            double complex dimension(nterms + 1,nterms + 1),depend(nterms,nterms) :: mrotate
+        end subroutine zflip
+        subroutine prinout(mpole,ll,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            double complex dimension(nterms + 1,nterms + 1) :: mpole
+            integer :: ll
+            integer, optional,check((shape(mpole,0)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,0)-1)
+        end subroutine prinout
+        subroutine bnlcft(c,sqc,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            double precision dimension(nterms + 1,nterms + 1) :: c
+            double precision dimension(nterms + 1,nterms + 1),depend(nterms,nterms) :: sqc
+            integer, optional,check((shape(c,0)-1)==nterms),depend(c) :: nterms=(shape(c,0)-1)
+        end subroutine bnlcft
+        subroutine fstrtn(nterms,d,sqc,theta) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer, optional,check((shape(d,0)-1)==nterms),depend(d) :: nterms=(shape(d,0)-1)
+            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1) :: d
+            double precision dimension(4 * nterms + 1,4 * nterms + 1),depend(nterms,nterms) :: sqc
+            double precision :: theta
+        end subroutine fstrtn
+        subroutine geterrstr(ifcharge,ifdipole,ifpgh,ifpghtarg,str1,len1) ! in :fortran:FMM3D/src/Common/fmmcommon.f
+            integer :: ifcharge
+            integer :: ifdipole
+            integer :: ifpgh
+            integer :: ifpghtarg
+            character*(*) :: str1
+            integer :: len1
+        end subroutine geterrstr
     end interface 
 end python module fortran
 
