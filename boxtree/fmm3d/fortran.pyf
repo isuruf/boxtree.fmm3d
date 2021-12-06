@@ -267,6 +267,52 @@ python module fortran ! in
             integer dimension(n),depend(n) :: ixy
             integer dimension(2,nboxes),depend(nboxes) :: ixyse
         end subroutine pts_tree_sort
+        subroutine l3dterms(eps,nterms) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer :: nterms
+        end subroutine l3dterms
+        subroutine l3dterms_far(eps,nterms) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer :: nterms
+        end subroutine l3dterms_far
+        subroutine l3dterms_list2(eps,itable,ier) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer dimension(7,7,7) :: itable
+            integer :: ier
+        end subroutine l3dterms_list2
+        subroutine l3dterms_list2w(eps,itable,ier) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer dimension(7,7,7) :: itable
+            integer :: ier
+        end subroutine l3dterms_list2w
+        subroutine l3dterms_list2e(eps,itable,ier) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer dimension(15,15,15) :: itable
+            integer :: ier
+        end subroutine l3dterms_list2e
+        subroutine l3dterms_list2ew(eps,itable,ier) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            real*8 :: eps
+            integer dimension(15,15,15) :: itable
+            integer :: ier
+        end subroutine l3dterms_list2ew
+        subroutine l3dterms_eval(itype,eps,nterms,ier) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
+            integer :: itype
+            real*8 :: eps
+            integer :: nterms
+            integer :: ier
+        end subroutine l3dterms_eval
+        subroutine h3dterms(size_bn,zk,eps,nterms) ! in :fortran:FMM3D/src/Helmholtz/h3dterms.f
+            real*8 :: size_bn
+            complex*16 :: zk
+            real*8 :: eps
+            integer :: nterms
+        end subroutine h3dterms
+        subroutine h3dterms_far(size_bn,zk,eps,nterms) ! in :fortran:FMM3D/src/Helmholtz/h3dterms.f
+            real*8 :: size_bn
+            complex*16 :: zk
+            real*8 :: eps
+            integer :: nterms
+        end subroutine h3dterms_far
     end interface 
 end python module fortran
 
