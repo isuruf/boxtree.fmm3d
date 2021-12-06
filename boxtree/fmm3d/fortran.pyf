@@ -318,7 +318,7 @@ python module fortran ! in
             integer dimension(2,nlevels + 1) :: laddr
             integer*8 dimension(2,*) :: iaddr
             integer, optional,check((shape(laddr,1)-1)==nlevels),depend(laddr) :: nlevels=(shape(laddr,1)-1)
-            integer*8 :: lmptot
+            integer*8 dimension(1) :: lmptot
             integer dimension(nlevels + 1),depend(nlevels) :: nterms
         end subroutine mpalloc
         subroutine dreorderf(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
