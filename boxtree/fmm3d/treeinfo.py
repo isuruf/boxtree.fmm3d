@@ -1,19 +1,20 @@
 import numpy as np
+from boxtree.fmm3d.fortran import pts_tree_sort
 
 def fmm3d_tree_build(tree, trav, queue):
+    nlevels = tree.nlevels
+    nboxes = tree.nboxes
+
     box_levels = tree.box_levels.get(queue)
     box_parent_ids = tree.box_parent_ids.get(queue)
     box_child_ids = tree.box_child_ids.get(queue)[:, :nboxes]
     coll_starts = trav.colleagues_starts.get(queue)
     coll_lists = trav.colleagues_lists.get(queue)
-    box_centers = trav.box_centers.get(queue)[:, :nboxes]
+    box_centers = tree.box_centers.get(queue)[:, :nboxes]
 
-    nlevels = tree.nlevels
-    nboxes = tree.nboxes
-
-    iptr = [0]*8
-    iptr[0] = 0
-    iptr[1] = 2*(nlevels+1)
+    iptr = np.zeros(8, dtype=np.int64)
+    iptr[0] = 1
+    iptr[1] = 2*(nlevels+1) + 1
     iptr[2] = iptr[1] + nboxes
     iptr[3] = iptr[2] + nboxes
     iptr[4] = iptr[3] + nboxes
@@ -21,50 +22,51 @@ def fmm3d_tree_build(tree, trav, queue):
     iptr[6] = iptr[5] + nboxes
     iptr[7] = iptr[6] + 27*nboxes
 
-    ltree = iptr[7]
+    ltree = iptr[7] - 1
     assert ltree == 39*nboxes + 2*(nlevels+1)
 
-    itree = np.zeros(ltree, dtype=np.int)
+    itree = np.zeros(ltree, dtype=np.int32)
 
-    # first box for first level
-    itree[0] = 0
-    # last box for first level
-    itree[1] = 0
+    for i in range(nlevels):
+        # first box for ith level
+        itree[2*i] = tree.level_start_box_nrs[i] + 1
+        # last box for ith level
+        itree[2*i + 1] = tree.level_start_box_nrs[i + 1]
 
     # level of the boxes
-    itree[iptr[1]:iptr[2]] = box_levels
+    itree[iptr[1] - 1:iptr[2] - 1] = box_levels
 
     # parent of the boxes
-    itree[iptr[2]:iptr[3]] = box_parent_ids
-    itree[iptr[2]] = -1   # for box 0, set -1
+    itree[iptr[2] - 1:iptr[3] - 1] = box_parent_ids
+    itree[iptr[2] - 1] = -1   # for box 0, set -1
 
     # number of childs of boxes
-    itree[iptr[3]:iptr[4]] = np.count_nonzero(box_child_ids, axis=0)
+    itree[iptr[3] - 1:iptr[4] - 1] = np.count_nonzero(box_child_ids, axis=0)
 
     # child ids of boxes
-    itree[iptr[4]:iptr[5]] = -1
+    itree[iptr[4] - 1:iptr[5] - 1] = -1
     for i in range(nboxes):
         child_boxes = box_child_ids[:, i]
         non_zero_child_boxes = child_boxes[np.nonzero(child_boxes)]
-        istart = iptr[4] + 8*i
-        itree[istart:istart + len(non_zero_child_boxes)] = non_zero_child_boxes
+        istart = iptr[4] + 8*i - 1
+        itree[istart:istart + len(non_zero_child_boxes)] = non_zero_child_boxes + 1
 
     # ncolleagues
-    itree[iptr[5]:iptr[6]] = coll_starts[1:] - coll_starts[:-1]
+    itree[iptr[5] - 1:iptr[6] - 1] = coll_starts[1:] - coll_starts[:-1]
 
     # icolleagues
-    itree[iptr[6]:iptr[7]] = -1
+    itree[iptr[6] - 1:iptr[7] - 1] = -1
     for i in range(nboxes):
-        istart = iptr[6] + 27*i
-        itree[istart:istart+itree[iptr[5]+i]] = \
-                coll_lists[coll_starts[i]:coll_starts[i+1]]
+        istart = iptr[6] + 27*i - 1
+        itree[istart:istart+itree[iptr[5] + i - 1]] = \
+                coll_lists[coll_starts[i]:coll_starts[i+1]] + 1
 
-    boxsize = np.zeros(nlevels + 1, dtype=np.int)
+    boxsize = np.zeros(nlevels + 1, dtype=np.int32)
     boxsize[0] = tree.root_extent
     for i in range(nlevels):
         boxsize[i + 1] = boxsize[i] / 2
 
-    return itree, iptr, box_centers, boxsize
+    return itree, iptr, np.asfortranarray(box_centers), boxsize
 
 
 import pyopencl as cl
@@ -90,5 +92,35 @@ from boxtree.traversal import FMMTraversalBuilder
 tg = FMMTraversalBuilder(ctx)
 trav, _ = tg(queue, tree)
 
-itree, iptr, box_centers, boxsize = fmm3d_tree_build(tree, trav, queue)
+itree, ipointer, treecenters, boxsize = fmm3d_tree_build(tree, trav, queue)
+ltree = len(itree)
 
+nlevels = tree.nlevels
+nboxes = tree.nboxes
+
+nexpc = 0
+expc = np.zeros((3, nexpc), dtype=np.double, order='F')
+
+source = np.array([row.get(queue) for row in tree.sources], order='F')
+nsource = source.shape[1]
+
+isrc = np.zeros(nsource, dtype=np.int32)
+itarg = np.zeros(nboxes, dtype=np.int32)
+iexpc = np.zeros(nexpc, dtype=np.int32)
+
+isrcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+itargse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+iexpcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+
+pts_tree_sort(
+    n=np.array(nsource),
+    xys=source,
+    itree=itree,
+    ltree=np.array(ltree),
+    nboxes=np.array(nboxes),
+    nlevels=np.array(nlevels),
+    iptr=ipointer,
+    centers=treecenters,
+    ixy=isrc,
+    ixyse=isrcse,
+)
