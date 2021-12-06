@@ -66,7 +66,46 @@ def fmm3d_tree_build(tree, trav, queue):
     for i in range(nlevels):
         boxsize[i + 1] = boxsize[i] / 2
 
-    return itree, iptr, np.asfortranarray(box_centers), boxsize
+    nexpc = 0
+    expc = np.zeros((3, nexpc), dtype=np.double, order='F')
+
+    source = np.array([row.get(queue) for row in tree.sources], order='F')
+    nsource = source.shape[1]
+
+    targ = np.array([row.get(queue) for row in tree.targets], order='F')
+    ntarg = targ.shape[1]
+
+    isrc = np.zeros(nsource, dtype=np.int32)
+    itarg = np.zeros(ntarg, dtype=np.int32)
+    iexpc = np.zeros(1, dtype=np.int32)
+
+    isrcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+    itargse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+    iexpcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
+
+    treecenters = np.asfortranarray(box_centers)
+
+    pts_tree_sort_kwargs = dict(
+        itree=itree,
+        ltree=ltree,
+        nboxes=nboxes,
+        nlevels=nlevels,
+        iptr=iptr,
+        centers=treecenters,
+    )
+
+    pts_tree_sort(n=nsource, xys=source, ixy=isrc, ixyse=isrcse,
+        **pts_tree_sort_kwargs)
+
+    pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
+        **pts_tree_sort_kwargs)
+
+    pts_tree_sort(n=nexpc, xys=expc, ixy=iexpc, ixyse=iexpcse,
+        **pts_tree_sort_kwargs)
+
+    return itree, iptr, treecenters, boxsize, \
+        source, nsource, targ, ntarg, expc, nexpc, \
+        isrc, itarg, iexpc, isrcse, itargse, iexpcse
 
 
 import pyopencl as cl
@@ -92,35 +131,8 @@ from boxtree.traversal import FMMTraversalBuilder
 tg = FMMTraversalBuilder(ctx)
 trav, _ = tg(queue, tree)
 
-itree, ipointer, treecenters, boxsize = fmm3d_tree_build(tree, trav, queue)
-ltree = len(itree)
+itree, ipointer, treecenters, boxsize, \
+    source, nsource, targ, ntarg, expc, nexpc, \
+    isrc, itarg, iexpc, isrcse, itargse, iexpcse \
+            = fmm3d_tree_build(tree, trav, queue)
 
-nlevels = tree.nlevels
-nboxes = tree.nboxes
-
-nexpc = 0
-expc = np.zeros((3, nexpc), dtype=np.double, order='F')
-
-source = np.array([row.get(queue) for row in tree.sources], order='F')
-nsource = source.shape[1]
-
-isrc = np.zeros(nsource, dtype=np.int32)
-itarg = np.zeros(nboxes, dtype=np.int32)
-iexpc = np.zeros(nexpc, dtype=np.int32)
-
-isrcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
-itargse = np.zeros((2, nboxes), dtype=np.int32, order='F')
-iexpcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
-
-pts_tree_sort(
-    n=np.array(nsource),
-    xys=source,
-    itree=itree,
-    ltree=np.array(ltree),
-    nboxes=np.array(nboxes),
-    nlevels=np.array(nlevels),
-    iptr=ipointer,
-    centers=treecenters,
-    ixy=isrc,
-    ixyse=isrcse,
-)
