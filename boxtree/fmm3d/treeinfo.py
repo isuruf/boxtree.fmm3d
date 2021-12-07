@@ -104,6 +104,6 @@ def fmm3d_tree_build(tree, trav, queue):
     pts_tree_sort(n=nexpc, xys=expc, ixy=iexpc, ixyse=iexpcse,
         **pts_tree_sort_kwargs)
 
-    return itree, iptr, treecenters, boxsize, \
+    return itree, ltree, iptr, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse
