@@ -269,7 +269,7 @@ python module fortran ! in
         end subroutine pts_tree_sort
         subroutine l3dterms(eps,nterms) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
             real*8 :: eps
-            integer :: nterms
+            integer dimension(1) :: nterms
         end subroutine l3dterms
         subroutine l3dterms_far(eps,nterms) ! in :fortran:FMM3D/src/Laplace/l3dterms.f
             real*8 :: eps
@@ -305,7 +305,7 @@ python module fortran ! in
             real*8 :: size_bn
             complex*16 :: zk
             real*8 :: eps
-            integer :: nterms
+            integer dimension(1) :: nterms
         end subroutine h3dterms
         subroutine h3dterms_far(size_bn,zk,eps,nterms) ! in :fortran:FMM3D/src/Helmholtz/h3dterms.f
             real*8 :: size_bn

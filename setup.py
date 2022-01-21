@@ -40,7 +40,7 @@ exts = [Extension(
     name="boxtree.fmm3d.fortran",
     sources=sources,
     f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort",
-        "l3dterms", "h3dterms", "mpalloc", ":"],
+        "pts_tree_build", "l3dterms", "h3dterms", "mpalloc", ":"],
     libraries=libraries,
     library_dirs=library_dirs,
     extra_link_args=["-fopenmp"],
