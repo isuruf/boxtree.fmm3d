@@ -77,6 +77,20 @@ def fmm3d_tree_build(tree, trav, queue):
     targ = np.array([row.get(queue) for row in tree.targets], order='F')
     ntarg = targ.shape[1]
 
+    treecenters = np.asfortranarray(box_centers)
+    #print(boxsize)
+    #print(iptr)
+    #print(treecenters)
+    """pts_tree_build(src=source, ns=nsource, targ=targ, nt=ntarg, idivflag=0,
+            ndiv=40, nlmin=0, nlmax=51, ifunif=0,
+            iper=1, nlevels=nlevels, nboxes=nboxes, ltree=ltree,
+            itree=itree, iptr=iptr, centers=treecenters, boxsize=boxsize)
+            """
+    #print(boxsize)
+    #print(iptr)
+    #print(treecenters)
+    #1/0
+
     isrc = np.zeros(nsource, dtype=np.int32)
     itarg = np.zeros(ntarg, dtype=np.int32)
     iexpc = np.zeros(1, dtype=np.int32)
@@ -84,8 +98,6 @@ def fmm3d_tree_build(tree, trav, queue):
     isrcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
     itargse = np.zeros((2, nboxes), dtype=np.int32, order='F')
     iexpcse = np.zeros((2, nboxes), dtype=np.int32, order='F')
-
-    treecenters = np.asfortranarray(box_centers)
 
     pts_tree_sort_kwargs = dict(
         itree=itree,

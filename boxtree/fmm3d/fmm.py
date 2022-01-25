@@ -4,7 +4,12 @@ from boxtree.fmm3d.fortran import (l3dterms, h3dterms, mpalloc,
 import numpy as np
 
 def reorder(arr, iarr):
-    return arr[:, iarr - 1]
+    return arr[..., iarr - 1]
+
+def reorder_inv(arr, iarr):
+    res = arr.copy()
+    res[..., iarr - 1] = arr
+    return res
 
 import pyopencl as cl
 ctx = cl.create_some_context()
@@ -111,13 +116,13 @@ else:
 
 # src/Laplace/lfmm3d.f#L426
 if ifdipole == 1:
-    dipvecsort = dipvec[:, :, isrc - 1]
+    dipvecsort = reorder(dipvec, isrc)
     dipvecsort *= b0inv2
 else:
     dipvecsort = np.zeros((nd, 3, 0), dtype=np.double, order='F')
 
 # src/Laplace/lfmm3d.f#L435
-targsort = reorder(source, itarg)
+targsort = reorder(targ, itarg)
 targsort *= b0inv
 
 # src/Laplace/lfmm3d.f#L442
@@ -141,10 +146,10 @@ nterms = np.empty(nlevels + 1, dtype=np.int32)
 for i in range(nlevels + 1):
     if laplace:
         # src/Laplace/lfmm3d.f#L392
-        l3dterms(eps, nterms[i])
+        l3dterms(eps, nterms[i:i+1])
     else:
         # src/Helmholtz/hfmm3d.f#L428
-        h3dterms(boxsize[i], zkfmm, eps, nterms[i])
+        h3dterms(boxsize[i], zkfmm, eps, nterms[i:i+1])
 
 nmax = np.max(nterms)
 lmptemp = (nmax+1)*(2*nmax+1)*2*nd
@@ -167,7 +172,7 @@ expcsort = np.empty((3, nexpc), dtype=np.double)
 scjsort = np.empty(1, dtype=np.double)
 radssort = np.empty(1, dtype=np.double)
 
-ier = np.zeros(1, dtype=np.int32)
+ier = np.zeros(1, dtype=np.int32) * -1
 
 fmm3dmain_kwargs = dict(
     nd=np.int32(nd),
@@ -228,3 +233,35 @@ else:
         radssort=radssort,
         jsort=texpssort,
         **fmm3dmain_kwargs)
+
+# src/Laplace/lfmm3d.f#L501
+if ifpgh >= 1:
+    pot = reorder_inv(potsort, isrc)
+if ifpgh >= 2:
+    grad = reorder_inv(gradsort, isrc)
+    grad *= b0inv
+if ifpgh >= 3:
+    hess = reorder_inv(hesssort, isrc)
+    hess *= b0inv2
+
+# src/Laplace/lfmm3d.f#L514
+if ifpghtarg >= 1:
+    pottarg = reorder_inv(pottargsort, itarg)
+if ifpghtarg >= 2:
+    gradtarg = reorder_inv(gradtargsort, itarg)
+    gradtarg *= b0inv
+if ifpghtarg >= 3:
+    hesstarg = reorder_inv(hesstargsort, itarg)
+    hesstarg *= b0inv2
+
+particles = np.array([a.get(queue) for a in particles])
+nparticles = charge.shape[1]
+pot2 = np.zeros(nparticles, dtype=np.double)
+for i in range(nparticles):
+    for j in range(nparticles):
+        if i == j:
+            continue
+        x = particles[:, i]
+        y = particles[:, j]
+        pot2[i] += charge[0, j]/np.linalg.norm(x - y)
+
