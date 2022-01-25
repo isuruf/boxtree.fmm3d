@@ -1,5 +1,5 @@
 import numpy as np
-from boxtree.fmm3d.fortran import pts_tree_sort
+from boxtree.fmm3d.fortran import pts_tree_sort, pts_tree_build, pts_tree_mem
 
 def fmm3d_tree_build(tree, trav, queue):
     # src/Laplace/lfmm3d.f L213-L240
@@ -38,7 +38,7 @@ def fmm3d_tree_build(tree, trav, queue):
     itree[iptr[1] - 1:iptr[2] - 1] = box_levels
 
     # parent of the boxes
-    itree[iptr[2] - 1:iptr[3] - 1] = box_parent_ids
+    itree[iptr[2] - 1:iptr[3] - 1] = box_parent_ids + 1
     itree[iptr[2] - 1] = -1   # for box 0, set -1
 
     # number of childs of boxes
@@ -53,14 +53,15 @@ def fmm3d_tree_build(tree, trav, queue):
         itree[istart:istart + len(non_zero_child_boxes)] = non_zero_child_boxes + 1
 
     # ncolleagues
-    itree[iptr[5] - 1:iptr[6] - 1] = coll_starts[1:] - coll_starts[:-1]
+    itree[iptr[5] - 1:iptr[6] - 1] = coll_starts[1:] - coll_starts[:-1] + 1
 
     # icolleagues
     itree[iptr[6] - 1:iptr[7] - 1] = -1
     for i in range(nboxes):
         istart = iptr[6] + 27*i - 1
-        itree[istart:istart+itree[iptr[5] + i - 1]] = \
-                coll_lists[coll_starts[i]:coll_starts[i+1]] + 1
+        colls = coll_lists[coll_starts[i]:coll_starts[i+1]] + 1
+        colls = np.sort(np.append(colls, [i + 1]))
+        itree[istart:istart+itree[iptr[5] + i - 1]] = colls
 
     boxsize = np.zeros(nlevels + 1, dtype=np.double)
     boxsize[0] = tree.root_extent
@@ -98,12 +99,14 @@ def fmm3d_tree_build(tree, trav, queue):
     pts_tree_sort(n=nsource, xys=source, ixy=isrc, ixyse=isrcse,
         **pts_tree_sort_kwargs)
 
-    pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
-        **pts_tree_sort_kwargs)
+    if ntarg > 0:
+        pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
+            **pts_tree_sort_kwargs)
 
     pts_tree_sort(n=nexpc, xys=expc, ixy=iexpc, ixyse=iexpcse,
         **pts_tree_sort_kwargs)
 
     return itree, ltree, iptr, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
-        isrc, itarg, iexpc, isrcse, itargse, iexpcse
+        isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
+        nlevels, nboxes

@@ -80,17 +80,21 @@ else:
 
 # src/Laplace/lfmm3d.f#L276-288
 if ifpghtarg == 1:
-    pottargsort = np.zeros((nd, nsource), dtype=np.double, order='F')
+    pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
     gradtargsort = np.zeros((nd, 3, 1), dtype=np.double, order='F')
     hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
 elif ifpghtarg == 2:
-    pottargsort = np.zeros((nd, nsource), dtype=np.double, order='F')
-    gradtargsort = np.zeros((nd, 3, nsource), dtype=np.double, order='F')
+    pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
+    gradtargsort = np.zeros((nd, 3, ntarg), dtype=np.double, order='F')
     hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
 elif ifpghtarg == 3:
-    pottargsort = np.zeros((nd, nsource), dtype=np.double, order='F')
-    gradtargsort = np.zeros((nd, 3, nsource), dtype=np.double, order='F')
-    hesstargsort = np.zeros((nd, 6, nsource), dtype=np.double, order='F')
+    pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
+    gradtargsort = np.zeros((nd, 3, ntarg), dtype=np.double, order='F')
+    hesstargsort = np.zeros((nd, 6, ntarg), dtype=np.double, order='F')
+elif ifpghtarg == 0:
+    pottargsort = np.zeros((nd, 1), dtype=np.double, order='F')
+    gradtargsort = np.zeros((nd, 3, 1), dtype=np.double, order='F')
+    hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
 else:
     raise ValueError(f"unknown ifpghtarg value: {ifpghtarg}")
 
@@ -187,7 +191,7 @@ fmm3dmain_kwargs = dict(
     itree=itree,
     ltree=np.int32(ltree),
     ipointer=ipointer,
-    ndiv=np.int32(0),  # not used
+    ndiv=np.int32(ndiv),  # not used
     nlevels=np.int32(nlevels),
     nboxes=np.int32(nboxes),
     iper=np.int32(iper),
@@ -211,6 +215,8 @@ fmm3dmain_kwargs = dict(
     scjsort=scjsort,
     ifnear=np.int32(0),
     ier=ier)
+
+assert ier == 0
 
 if laplace:
     lfmm3dmain(
