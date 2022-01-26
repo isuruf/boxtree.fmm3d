@@ -1,6 +1,6 @@
 from boxtree.fmm3d.treeinfo import fmm3d_tree_build
 from boxtree.fmm3d.fortran import (l3dterms, h3dterms, mpalloc,
-    lfmm3dmain, hfmm3dmain)
+    lfmm3dmain, hfmm3dmain, lfmm3d)
 import numpy as np
 
 def reorder(arr, iarr):
@@ -18,33 +18,43 @@ queue = cl.CommandQueue(ctx)
 dims = 3
 nparticles = 500
 
-from pyopencl.clrandom import RanluxGenerator
-rng = RanluxGenerator(queue, seed=15)
+from numpy.random import default_rng
+np_rng = default_rng(10)
+vals = np_rng.random((3, nparticles - 2), dtype=np.double)
+particles_np = [
+    np.append(vals[0], [1, 0]),
+    np.append(vals[1], [1, 0]),
+    np.append(vals[2], [1, 0]),
+]
 
 from pytools.obj_array import make_obj_array
 particles = make_obj_array([
-    rng.normal(queue, nparticles, dtype=np.float64)
+    cl.array.to_device(queue, particles_np[i])
     for i in range(dims)])
 
+from pyopencl.clrandom import PhiloxGenerator
+rng = PhiloxGenerator(ctx, seed=15)
 charge = rng.normal(queue, nparticles, dtype=np.float64).get(
         queue).reshape((1, nparticles))
 dipvec = np.asfortranarray(
         rng.normal(queue, (1, 3, nparticles), dtype=np.float64).get(queue))
 
+ndiv = 40
 from boxtree import TreeBuilder
 tb = TreeBuilder(ctx)
-tree, _ = tb(queue, particles, max_particles_in_box=5)
+tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
+    bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
 
 from boxtree.traversal import FMMTraversalBuilder
 tg = FMMTraversalBuilder(ctx)
 trav, _ = tg(queue, tree)
 
-ifdipole = 1
+ifdipole = 0
 ifcharge = 1
-ifpgh = 3
-ifpghtarg = 3
-zk = 1
-eps = 1e-10
+ifpgh = 1
+ifpghtarg = 0
+zk = 0
+eps = 1e-2
 # number of fmms
 nd = 1
 # flag for periodic implmentations. Currently unused
@@ -53,11 +63,9 @@ ifnear = 1
 
 itree, ltree, ipointer, treecenters, boxsize, \
     source, nsource, targ, ntarg, expc, nexpc, \
-    isrc, itarg, iexpc, isrcse, itargse, iexpcse \
+    isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
+    nlevels, nboxes \
             = fmm3d_tree_build(tree, trav, queue)
-
-nlevels = tree.nlevels - 1
-nboxes = tree.nboxes
 
 if ifcharge == 0:
     charge = np.array([])
@@ -151,6 +159,8 @@ for i in range(nlevels + 1):
         # src/Helmholtz/hfmm3d.f#L428
         h3dterms(boxsize[i], zkfmm, eps, nterms[i:i+1])
 
+print(nterms)
+
 nmax = np.max(nterms)
 lmptemp = (nmax+1)*(2*nmax+1)*2*nd
 iaddr = np.empty((2, nboxes), dtype=np.int64, order='F')
@@ -218,7 +228,7 @@ fmm3dmain_kwargs = dict(
     hesstarg=hesstargsort,
     ntj=np.int32(0),
     scjsort=scjsort,
-    ifnear=np.int32(0),
+    ifnear=np.int32(1),
     ier=ier)
 
 assert ier == 0
@@ -254,14 +264,23 @@ if ifpghtarg >= 3:
     hesstarg = reorder_inv(hesstargsort, itarg)
     hesstarg *= b0inv2
 
-particles = np.array([a.get(queue) for a in particles])
-nparticles = charge.shape[1]
-pot2 = np.zeros(nparticles, dtype=np.double)
-for i in range(nparticles):
-    for j in range(nparticles):
+print("result", pot)
+
+pot2 = np.zeros(nsource, dtype=np.double)
+for i in range(nsource):
+    for j in range(nsource):
         if i == j:
             continue
-        x = particles[:, i]
-        y = particles[:, j]
+        x = source[:, i]
+        y = source[:, j]
         pot2[i] += charge[0, j]/np.linalg.norm(x - y)
+
+"""
+pot2 = np.zeros((1, nsource), dtype=np.double)
+
+lfmm3d(nd=1,eps=eps,nsource=nsource,source=source,ifcharge=ifcharge,
+       charge=charge,ifdipole=ifdipole,dipvec=dipvec,iper=iper,ifpgh=ifpgh,pot=pot2,grad=gradsort,hess=hesssort,ntarg=ntarg,
+       targ=targ,ifpghtarg=ifpghtarg,pottarg=pottargsort,gradtarg=gradtargsort,hesstarg=hesstargsort,ier=ier)
+"""
+print(pot2-pot)
 

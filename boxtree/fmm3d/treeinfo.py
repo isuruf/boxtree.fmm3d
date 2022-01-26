@@ -77,19 +77,47 @@ def fmm3d_tree_build(tree, trav, queue):
     targ = np.array([row.get(queue) for row in tree.targets], order='F')
     ntarg = targ.shape[1]
 
+    targ = np.zeros((3, 0), order='F')
+    ntarg = 0
+    
     treecenters = np.asfortranarray(box_centers)
-    #print(boxsize)
-    #print(iptr)
-    #print(treecenters)
-    """pts_tree_build(src=source, ns=nsource, targ=targ, nt=ntarg, idivflag=0,
+
+    print("nlevels before", nlevels)
+    print("nboxes before", nboxes)
+    nlevels = np.array([0], dtype=np.int32)
+    nboxes = np.array([0], dtype=np.int32)
+    ltree = np.array([0], dtype=np.int64)
+    pts_tree_mem(src=source,ns=nsource,targ=targ,nt=ntarg,idivflag=0,ndiv=40,nlmin=0,nlmax=51,
+        ifunif=0,iper=1,nlevels=nlevels,nboxes=nboxes,ltree=ltree)
+    nboxes = int(nboxes[0])
+    nlevels = int(nlevels[0])
+    ltree = int(ltree[0])
+
+    print("nlevels after", nlevels)
+    print("nboxes after", nboxes)
+    boxsize = np.zeros(nlevels + 1, dtype=np.double)
+    boxsize[0] = tree.root_extent
+    for i in range(nlevels):
+        boxsize[i + 1] = boxsize[i] / 2
+
+    print(nlevels)
+    print(boxsize)
+    print(iptr)
+    print(list(itree))
+    print("treecenters", treecenters)
+    itree = np.zeros(ltree, dtype=np.int32)
+    treecenters = np.asfortranarray(np.zeros((3, nboxes), dtype=np.double))
+    pts_tree_build(src=source, ns=nsource, targ=targ, nt=ntarg, idivflag=0,
             ndiv=40, nlmin=0, nlmax=51, ifunif=0,
             iper=1, nlevels=nlevels, nboxes=nboxes, ltree=ltree,
             itree=itree, iptr=iptr, centers=treecenters, boxsize=boxsize)
-            """
-    #print(boxsize)
-    #print(iptr)
-    #print(treecenters)
-    #1/0
+    print(boxsize)
+    print(iptr)
+    print(list(itree))
+    print("treecenters2", treecenters)
+    print(ltree)
+    print(nboxes)
+    print(nlevels)
 
     isrc = np.zeros(nsource, dtype=np.int32)
     itarg = np.zeros(ntarg, dtype=np.int32)
@@ -117,6 +145,11 @@ def fmm3d_tree_build(tree, trav, queue):
 
     pts_tree_sort(n=nexpc, xys=expc, ixy=iexpc, ixyse=iexpcse,
         **pts_tree_sort_kwargs)
+
+    print(isrc)
+    print(isrcse)
+    print(iexpc)
+    print(iexpcse)
 
     return itree, ltree, iptr, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \

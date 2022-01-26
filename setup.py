@@ -39,15 +39,15 @@ else:
 exts = [Extension(
     name="boxtree.fmm3d.fortran",
     sources=sources,
-    f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort",
-        "pts_tree_build", "l3dterms", "h3dterms", "mpalloc", ":"],
+    f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort", "lfmm3d",
+        "pts_tree_build", "pts_tree_mem", "l3dterms", "h3dterms", "mpalloc", ":"],
     libraries=libraries,
     library_dirs=library_dirs,
     extra_link_args=["-fopenmp"],
     extra_f77_compile_args=["-std=legacy", "-fopenmp", "-fPIC",
         "-O3", "-funroll-loops", "-Wno-unused-variable", "-Wno-tabs",
         "-Wno-conversion", "-Wno-maybe-uninitialized", "-Wno-unused-dummy-argument",
-        "-Wno-unused-label"],
+        "-Wno-unused-label", "-O0", "-g"],
     )]
 
 setup(
