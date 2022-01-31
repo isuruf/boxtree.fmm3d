@@ -7,6 +7,7 @@ from sumpy.kernel import (LaplaceKernel, HelmholtzKernel,
     KernelWrapper, AxisSourceDerivative, DirectionalSourceDerivative)
 from pytools import memoize_method
 import numpy as np
+import pyopencl as cl
 
 
 def reorder(arr, iarr):
@@ -69,7 +70,7 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
         return potential
 
     def reorder_sources(self, source_array):
-        return source_array.get(source_array.queue)[self.tree.user_source_ids]
+        return source_array[self.tree.user_source_ids]
 
     def reorder_potentials(self, potentials):
         import numpy as np
@@ -80,7 +81,7 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
         def reorder(x):
             return x[self.tree.sorted_target_ids]
 
-        return np.array(map(reorder, potentials), dtype=object)
+        return np.array(list(map(reorder, potentials)), dtype=object)
 
     def finalize_potentials(self, potentials, template_ary):
         return potentials
@@ -106,6 +107,12 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
     def eval_multipoles(self, *args):
         return 0, FMM3DTimingFuture(0)
 
+    def local_expansions_view(self, *args):
+        raise NotImplementedError()
+
+    def multipole_expansions_view(self, *args):
+        raise NotImplementedError()
+
     def eval_direct(self,
             target_boxes, neighbor_sources_starts,
             neighbor_sources_lists, src_weight_vecs):
@@ -113,7 +120,7 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
         strength_usage = self.tree_indep.strength_usage
 
         ifcharge = 0
-        ifdipole = 1
+        ifdipole = 0
         charge = None
         dipvec = [0, 0, 0]
 
@@ -129,7 +136,7 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
                                 self.dipole_vecs[kernel.dir_vec_name]
             else:
                 ifcharge = 1
-                charge = strength
+                charge = strength.reshape((1, -1))
 
         nsource = len(self.tree.sources[0])
 
@@ -141,26 +148,26 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
 
         if self.tree.sources_are_targets:
             ifpghtarg = 0
-            ifpgh = self.tree.target_deriv_count + 1
+            ifpgh = self.tree_indep.target_deriv_count + 1
         else:
-            ifpghtarg = self.tree.target_deriv_count + 1
+            ifpghtarg = self.tree_indep.target_deriv_count + 1
             ifpgh = 0
 
         pot, grad, hess, pottarg, gradtarg, hesstarg = \
             _run_fmm(self.tree, self.traversal, charge, dipvec,
                     ifdipole, ifcharge, ifpgh, ifpghtarg, self.zk, self.eps)
 
-        if not self.tree.source_are_targets:
+        if not self.tree.sources_are_targets:
             pot, grad, hess = pottarg, gradtard, hesstarg
 
         result = []
-        for kernel in self.target_kernels:
+        for kernel in self.tree_indep.target_kernels:
             if not isinstance(kernel, KernelWrapper):
                 result.append(pot)
             else:
                 raise NotImplementedError("Not implemented yet")
 
-        return result, FMM3DTimingFuture(0)
+        return np.array(result, dtype=object), FMM3DTimingFuture(0)
 
 
 class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
@@ -226,6 +233,10 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, z
 
     if ifcharge == 0:
         charge = np.array([])
+    
+    if ifdipole == 0:
+        dipvec = np.array([])
+
 
     b0 = boxsize[0]
     b0inv = 1.0/b0
@@ -408,22 +419,22 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, z
 
     # src/Laplace/lfmm3d.f#L501
     if ifpgh >= 1:
-        pot = reorder_inv(potsort, isrc)
+        pot = reorder_inv(potsort, isrc).reshape(-1)
     if ifpgh >= 2:
-        grad = reorder_inv(gradsort, isrc)
+        grad = reorder_inv(gradsort, isrc).reshape(3, -1)
         grad *= b0inv
     if ifpgh >= 3:
-        hess = reorder_inv(hesssort, isrc)
+        hess = reorder_inv(hesssort, isrc).reshape(9, -1)
         hess *= b0inv2
 
     # src/Laplace/lfmm3d.f#L514
     if ifpghtarg >= 1:
-        pottarg = reorder_inv(pottargsort, itarg)
+        pottarg = reorder_inv(pottargsort, itarg).reshape(-1)
     if ifpghtarg >= 2:
-        gradtarg = reorder_inv(gradtargsort, itarg)
+        gradtarg = reorder_inv(gradtargsort, itarg).reshape(3, -1)
         gradtarg *= b0inv
     if ifpghtarg >= 3:
-        hesstarg = reorder_inv(hesstargsort, itarg)
+        hesstarg = reorder_inv(hesstargsort, itarg).reshape(9, -1)
         hesstarg *= b0inv2
 
     return pot, grad, hess, pottarg, gradtarg, hesstarg
