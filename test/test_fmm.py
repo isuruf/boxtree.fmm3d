@@ -65,7 +65,7 @@ def test_fmm(ctx_factory):
                 continue
             x = particles_host[:, i]
             y = particles_host[:, j]
-            pot_ref[i] += charge[0, j]/np.linalg.norm(x - y)
+            pot_ref[i] += charge[0, j]/(np.linalg.norm(x - y) * 4 * np.pi)
     
     assert np.max(np.abs(pot_ref - pot)) < eps
     

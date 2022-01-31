@@ -420,22 +420,26 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, z
     # src/Laplace/lfmm3d.f#L501
     if ifpgh >= 1:
         pot = reorder_inv(potsort, isrc).reshape(-1)
+        pot *= 1/(4 * np.pi)
     if ifpgh >= 2:
         grad = reorder_inv(gradsort, isrc).reshape(3, -1)
-        grad *= b0inv
+        grad *= b0inv / (4 * np.pi)
     if ifpgh >= 3:
         hess = reorder_inv(hesssort, isrc).reshape(9, -1)
-        hess *= b0inv2
+        hess *= b0inv2 / (4 * np.pi)
 
     # src/Laplace/lfmm3d.f#L514
     if ifpghtarg >= 1:
         pottarg = reorder_inv(pottargsort, itarg).reshape(-1)
+        pottarg *= 1/(4 * np.pi)
     if ifpghtarg >= 2:
         gradtarg = reorder_inv(gradtargsort, itarg).reshape(3, -1)
         gradtarg *= b0inv
+        gradtarg *= b0inv / (4 * np.pi)
     if ifpghtarg >= 3:
         hesstarg = reorder_inv(hesstargsort, itarg).reshape(9, -1)
         hesstarg *= b0inv2
+        hesstarg *= b0inv2 / (4 * np.pi)
 
     return pot, grad, hess, pottarg, gradtarg, hesstarg
 
