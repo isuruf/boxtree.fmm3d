@@ -33,7 +33,7 @@ class FMM3DTimingFuture:
         return True
 
 
-class FMM3dExpansionWrangler(ExpansionWranglerInterface):
+class FMM3DExpansionWrangler(ExpansionWranglerInterface):
     """Implements the :class:`boxtree.fmm.ExpansionWranglerInterface`
     by using FMM3D expansions/translations.
 
@@ -46,16 +46,30 @@ class FMM3dExpansionWrangler(ExpansionWranglerInterface):
         expansions, but not source particles.
     """
     def __init__(self, tree_indep, traversal, source_extra_kwargs,
-            kernel_extra_kwargs):
+            kernel_extra_kwargs, eps):
         super().__init__(tree_indep, traversal)
         self.source_extra_kwargs = source_extra_kwargs
         self.kernel_extra_kwargs = kernel_extra_kwargs
+        self.eps = eps
+
+        with cl.CommandQueue(tree_indep.cl_context) as queue:
+            self.dipole_vecs = {
+                name: np.array([d_i.get(queue=queue)
+                        for d_i in source_extra_kwargs[name]],
+                        order="F") for name in tree_indep.dipole_vec_names}
+
+        if tree_indep.is_helmholtz:
+            self.zk = kernel_extra_kwargs[
+                    tree_indep.base_kernel.helmholtz_k_name]
+        else:
+            self.zk = 0
+
 
     def reorder_potential(self, potential):
         return potential
 
     def reorder_sources(self, source_array):
-        return source_array.with_queue(source_array.queue)[self.tree.user_source_ids]
+        return source_array.get(source_array.queue)[self.tree.user_source_ids]
 
     def reorder_potentials(self, potentials):
         import numpy as np
@@ -92,8 +106,61 @@ class FMM3dExpansionWrangler(ExpansionWranglerInterface):
     def eval_multipoles(self, *args):
         return 0, FMM3DTimingFuture(0)
 
-    def eval_direct(self, *args):
-        return 0, FMM3DTimingFuture(0)
+    def eval_direct(self,
+            target_boxes, neighbor_sources_starts,
+            neighbor_sources_lists, src_weight_vecs):
+
+        strength_usage = self.tree_indep.strength_usage
+
+        ifcharge = 0
+        ifdipole = 1
+        charge = None
+        dipvec = [0, 0, 0]
+
+        for i, kernel in enumerate(self.tree_indep.source_kernels):
+            strength =  src_weight_vecs[strength_usage[i]]
+            if isinstance(kernel, KernelWrapper):
+                ifdipole = 1
+                if isinstance(kernel, AxisSourceDerivative):
+                    dipvec[kernel.axis] += strength
+                elif isinstance(kernel, DirectionalSourceDerivative):
+                    for d in range(3):
+                        dipvec[d] += strength * \
+                                self.dipole_vecs[kernel.dir_vec_name]
+            else:
+                ifcharge = 1
+                charge = strength
+
+        nsource = len(self.tree.sources[0])
+
+        if ifdipole:
+            for i in range(3):
+                if not isinstance(dipvec[i], np.ndarray):
+                    dipvec[i] = np.zeros(nsource, dtype=np.double)
+            dipvec = np.array(dipvec, order='F')
+
+        if self.tree.sources_are_targets:
+            ifpghtarg = 0
+            ifpgh = self.tree.target_deriv_count + 1
+        else:
+            ifpghtarg = self.tree.target_deriv_count + 1
+            ifpgh = 0
+
+        pot, grad, hess, pottarg, gradtarg, hesstarg = \
+            _run_fmm(self.tree, self.traversal, charge, dipvec,
+                    ifdipole, ifcharge, ifpgh, ifpghtarg, self.zk, self.eps)
+
+        if not self.tree.source_are_targets:
+            pot, grad, hess = pottarg, gradtard, hesstarg
+
+        result = []
+        for kernel in self.target_kernels:
+            if not isinstance(kernel, KernelWrapper):
+                result.append(pot)
+            else:
+                raise NotImplementedError("Not implemented yet")
+
+        return result, FMM3DTimingFuture(0)
 
 
 class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
@@ -104,18 +171,16 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
         self.source_kernels = source_kernels
         self.strength_usage = strength_usage
 
-        self.ifdipole = 0
-        self.ifcharge = 0
+        self.base_kernel = self.source_kernels[0].get_base_kernel()
+        self.is_helmholtz = isinstance(self.base_kernel, HelmholtzKernel)
 
-        self.is_helmholtz = isinstance(
-                self.source_kernels[0].get_base_kernel(), HelmholtzKernel)
+        self.dipole_vec_names = []
 
         for kernel in self.source_kernels:
             if not isinstance(kernel.get_base_kernel(),
                               (LaplaceKernel, HelmholtzKernel)):
                 raise ValueError("Only Laplace and Helmholtz allowed")
             if isinstance(kernel, KernelWrapper):
-                self.ifdipole = 1
                 if isinstance(kernel.inner_kernel, KernelWrapper):
                     raise ValueError(
                             "Only one source derivative transformation allowed.")
@@ -123,31 +188,31 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
                         (AxisSourceDerivative, DirectionalSourceDerivative)):
                     raise ValueError(
                             "Only axis and directional source derivatives allowed")
-            else:
-                self.ifcharge = 1
+                if isinstance(kernel, DirectionalSourceDerivative):
+                    self.dipole_vec_names.append(kernel.dir_vec_name)
 
         self.target_deriv_count = 0
         for kernel in self.target_kernels:
             deriv_count = 0
             inner_kernel = kernel
-            while isinstance(kernel, KernelWrapper):
-                if isinstance(kernel,
+            while isinstance(inner_kernel, KernelWrapper):
+                if isinstance(inner_kernel,
                         (AxisTargetDerivative, DirectionalTargetDerivative)):
                     deriv_count += 1
                 inner_kernel = kernel.inner_kernel
 
-            if isinstance(kernel, LaplaceKernel) and deriv_count > 3:
-                raise ValueError("Cannot take more than 3 target "
+            if isinstance(inner_kernel, LaplaceKernel) and deriv_count > 2:
+                raise ValueError("Cannot take more than two target "
                     "derivatives for Laplace kernel")
 
-            if isinstance(kernel, HelmholtzKernel) and deriv_count > 2:
-                raise ValueError("Cannot take more than 2 target "
-                    "derivatives for Helmholtz kernel")
+            if isinstance(inner_kernel, HelmholtzKernel) and deriv_count > 1:
+                raise ValueError("Cannot take more than one target "
+                    "derivative for Helmholtz kernel")
 
             self.target_deriv_count = max(self.target_deriv_count, deriv_count)
 
 
-def _run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, zk, eps):
+def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, zk, eps):
     # number of fmms
     nd = 1
     # flag for periodic implmentations. Currently unused
@@ -157,7 +222,7 @@ def _run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpgh
     itree, ltree, ipointer, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
-        nlevels, nboxes = fmm3d_tree_build(tree, trav, queue)
+        nlevels, nboxes = fmm3d_tree_build(tree, trav)
 
     if ifcharge == 0:
         charge = np.array([])
@@ -397,18 +462,21 @@ if __name__ == "__main__":
     ndiv = 40
     from boxtree import TreeBuilder
     tb = TreeBuilder(ctx)
-    tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
+    device_tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
                  bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
 
     from boxtree.traversal import FMMTraversalBuilder
     tg = FMMTraversalBuilder(ctx)
-    trav, _ = tg(queue, tree)
+    device_trav, _ = tg(queue, device_tree)
+
+    trav = device_trav.get(queue=queue)
+    tree = trav.tree
 
     pot, grad, hess, pottarg, gradtarg, hesstarg = \
-        _run_fmm(tree, trav, queue, charge, dipvec,
+        _run_fmm(tree, trav, charge, dipvec,
             ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=1e-5)
 
-    source = np.array([row.get(queue) for row in tree.sources])
+    source = np.array([row for row in tree.sources])
 
     pot2 = np.zeros(nparticles, dtype=np.double)
     for i in range(nparticles):

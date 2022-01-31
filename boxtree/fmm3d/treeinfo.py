@@ -18,17 +18,17 @@ def _get_child_dir(num):
                     dtype=np.double)
 
 
-def fmm3d_tree_build(tree, trav, queue):
+def fmm3d_tree_build(tree, trav):
     # src/Laplace/lfmm3d.f L213-L240
     nlevels = tree.nlevels - 1
     nboxes_pruned = tree.nboxes
 
-    box_levels_pruned = tree.box_levels.get(queue)
-    box_parent_ids_pruned = tree.box_parent_ids.get(queue)
-    box_child_ids_pruned = tree.box_child_ids.get(queue)[:, :nboxes_pruned]
-    coll_starts_pruned = trav.colleagues_starts.get(queue)
-    coll_lists_pruned = trav.colleagues_lists.get(queue)
-    box_centers_pruned = tree.box_centers.get(queue)[:, :nboxes_pruned]
+    box_levels_pruned = tree.box_levels
+    box_parent_ids_pruned = tree.box_parent_ids
+    box_child_ids_pruned = tree.box_child_ids[:, :nboxes_pruned]
+    coll_starts_pruned = trav.colleagues_starts
+    coll_lists_pruned = trav.colleagues_lists
+    box_centers_pruned = tree.box_centers[:, :nboxes_pruned]
     level_start_box_nrs_pruned = tree.level_start_box_nrs
 
     box_id_mapping = np.zeros_like(box_parent_ids_pruned)
@@ -171,10 +171,10 @@ def fmm3d_tree_build(tree, trav, queue):
     nexpc = 0
     expc = np.zeros((3, nexpc), dtype=np.double, order='F')
 
-    source = np.array([row.get(queue) for row in tree.sources], order='F')
+    source = np.array([row for row in tree.sources], order='F')
     nsource = source.shape[1]
 
-    targ = np.array([row.get(queue) for row in tree.targets], order='F')
+    targ = np.array([row for row in tree.targets], order='F')
     ntarg = targ.shape[1]
 
     targ = np.zeros((3, 0), order='F')
@@ -265,7 +265,7 @@ def fmm3d_tree_build(tree, trav, queue):
                   **pts_tree_sort_kwargs)
 
     isrc, isrcse = pts_tree_sort2(nsource, tree, trav, id_to_pruned_id_mapping,
-                                  queue, nboxes, box_child_ids)
+                                  nboxes, box_child_ids)
 
     if ntarg > 0:
         pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
@@ -315,7 +315,7 @@ def compute_colleagues(nboxes, box_parent_ids, box_child_ids, box_centers,
     return icolleagues, ncolleagues
 
 
-def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, queue, nboxes,
+def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
                    box_child_ids):
     ixy = np.zeros(n, dtype=np.int32)
     ixyse = np.zeros((2, nboxes), dtype=np.int32)
@@ -334,9 +334,9 @@ def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, queue, nboxes,
             if child_id != 0:
                 boxes_stack.append(child_id)
 
-    box_source_starts = tree.box_source_starts.get(queue)
-    box_source_counts_cumul = tree.box_source_counts_cumul.get(queue)
-    box_source_counts_nonchild = tree.box_source_counts_nonchild.get(queue)
+    box_source_starts = tree.box_source_starts
+    box_source_counts_cumul = tree.box_source_counts_cumul
+    box_source_counts_nonchild = tree.box_source_counts_nonchild
 
     count = 1
     for box_id in box_depth_first_ordering:

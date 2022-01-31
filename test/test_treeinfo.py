@@ -36,25 +36,28 @@ def get_test_data(ndiv):
             rng.normal(queue, (1, 3, nparticles), dtype=np.float64).get(queue))
 
     tb = TreeBuilder(ctx)
-    tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
+    device_tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
                  skip_prune=False,
                  bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
 
     tg = FMMTraversalBuilder(ctx)
-    trav, _ = tg(queue, tree)
+    device_trav, _ = tg(queue, device_tree)
 
-    return tree, trav, queue, charge, dipvec, particles_np
+    trav = device_trav.get(queue)
+    tree = trav.tree
+
+    return tree, trav, charge, dipvec, particles_np
 
 
 def test_treeinfo():
     ndiv = 40
-    tree, trav, queue, charge, dipvec, particles_np = get_test_data(ndiv)
+    tree, trav, charge, dipvec, particles_np = get_test_data(ndiv)
     ndiv = 50
 
     itree, ltree, ipointer, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
-        nlevels, nboxes = fmm3d_tree_build(tree, trav, queue)
+        nlevels, nboxes = fmm3d_tree_build(tree, trav)
 
     nlevels_ref = np.array([0], dtype=np.int32)
     nboxes_ref = np.array([0], dtype=np.int32)
