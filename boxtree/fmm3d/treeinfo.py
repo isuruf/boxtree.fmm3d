@@ -143,8 +143,6 @@ def fmm3d_tree_build(tree, trav, queue):
         itree[istart:istart + len(non_zero_child_boxes)] = \
             non_zero_child_boxes + 1
 
-    print(itree[iptr[4] - 1:iptr[5] - 1])
-
     # ncolleagues
     itree[iptr[5] - 1:iptr[6] - 1] = 0
     # icolleagues

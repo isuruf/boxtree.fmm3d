@@ -147,7 +147,7 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
             self.target_deriv_count = max(self.target_deriv_count, deriv_count)
 
 
-def run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, zk, eps):
+def _run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpghtarg, zk, eps):
     # number of fmms
     nd = 1
     # flag for periodic implmentations. Currently unused
@@ -334,6 +334,13 @@ def run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpght
             jsort=texpssort,
             **fmm3dmain_kwargs)
 
+    pot = None
+    grad = None
+    hess = None
+    pottarg = None
+    gradtarg = None
+    hesstarg = None
+
     # src/Laplace/lfmm3d.f#L501
     if ifpgh >= 1:
         pot = reorder_inv(potsort, isrc)
@@ -354,7 +361,8 @@ def run_fmm(tree, trav, queue, charge, dipvec, ifdipole, ifcharge, ifpgh, ifpght
         hesstarg = reorder_inv(hesstargsort, itarg)
         hesstarg *= b0inv2
 
-    return pot
+    return pot, grad, hess, pottarg, gradtarg, hesstarg
+
 
 if __name__ == "__main__":
     import pyopencl as cl
@@ -396,8 +404,9 @@ if __name__ == "__main__":
     tg = FMMTraversalBuilder(ctx)
     trav, _ = tg(queue, tree)
 
-    pot = run_fmm(tree, trav, queue, charge, dipvec,
-          ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=1e-5)
+    pot, grad, hess, pottarg, gradtarg, hesstarg = \
+        _run_fmm(tree, trav, queue, charge, dipvec,
+            ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=1e-5)
 
     source = np.array([row.get(queue) for row in tree.sources])
 
@@ -410,7 +419,5 @@ if __name__ == "__main__":
             y = source[:, j]
             pot2[i] += charge[0, j]/np.linalg.norm(x - y)
 
-    print(pot2)
-    print(pot)
     print(np.max(np.abs(pot2-pot)))
 
