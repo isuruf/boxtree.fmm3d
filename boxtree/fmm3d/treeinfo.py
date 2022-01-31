@@ -177,8 +177,9 @@ def fmm3d_tree_build(tree, trav):
     targ = np.array([row for row in tree.targets], order='F')
     ntarg = targ.shape[1]
 
-    targ = np.zeros((3, 0), order='F')
-    ntarg = 0
+    if tree.sources_are_targets:
+        targ = np.zeros((3, 0), order='F')
+        ntarg = 0
 
     treecenters = np.asfortranarray(box_centers)
     """
