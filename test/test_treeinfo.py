@@ -1,3 +1,6 @@
+from pyopencl.tools import (  # noqa
+        pytest_generate_tests_for_pyopencl as pytest_generate_tests)
+
 import pyopencl as cl
 from numpy.random import default_rng
 from pytools.obj_array import make_obj_array
@@ -9,8 +12,7 @@ from boxtree.fmm3d.fortran import pts_tree_build, pts_tree_mem
 from boxtree.fmm3d.treeinfo import fmm3d_tree_build
 
 
-def get_test_data(ndiv):
-    ctx = cl.create_some_context()
+def get_test_data(ndiv, ctx):
     queue = cl.CommandQueue(ctx)
 
     dims = 3
@@ -49,11 +51,10 @@ def get_test_data(ndiv):
     return tree, trav, charge, dipvec, particles_np
 
 
-def test_treeinfo():
+def test_treeinfo(ctx_factory):
+    ctx = ctx_factory()
     ndiv = 40
-    tree, trav, charge, dipvec, particles_np = get_test_data(ndiv)
-    ndiv = 50
-
+    tree, trav, charge, dipvec, particles_np = get_test_data(ndiv, ctx)
     itree, ltree, ipointer, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
