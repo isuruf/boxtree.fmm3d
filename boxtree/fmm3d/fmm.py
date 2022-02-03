@@ -325,11 +325,18 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
         nlevels, nboxes = fmm3d_tree_build(tree, trav)
 
+    laplace = (zk == 0)
+
+    if laplace:
+        dtype = np.float64
+    else:
+        dtype = np.complex128
+
     if ifcharge == 0:
-        charge = np.array([])
+        charge = np.array([], dtype=dtype)
 
     if ifdipole == 0:
-        dipvec = np.array([])
+        dipvec = np.array([], dtype=dtype)
 
     b0 = boxsize[0]
     b0inv = 1.0/b0
@@ -338,37 +345,41 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
 
     # src/Laplace/lfmm3d.f#L264-L274
     if ifpgh == 1:
-        potsort = np.zeros((nd, nsource), dtype=np.double, order='F')
-        gradsort = np.zeros((nd, 3, 1), dtype=np.double, order='F')
-        hesssort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
+        potsort = np.zeros((nd, nsource), dtype=dtype, order='F')
+        gradsort = np.zeros((nd, 3, 1), dtype=dtype, order='F')
+        hesssort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     elif ifpgh == 2:
-        potsort = np.zeros((nd, nsource), dtype=np.double, order='F')
-        gradsort = np.zeros((nd, 3, nsource), dtype=np.double, order='F')
-        hesssort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
+        potsort = np.zeros((nd, nsource), dtype=dtype, order='F')
+        gradsort = np.zeros((nd, 3, nsource), dtype=dtype, order='F')
+        hesssort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     elif ifpgh == 3:
-        potsort = np.zeros((nd, nsource), dtype=np.double, order='F')
-        gradsort = np.zeros((nd, 3, nsource), dtype=np.double, order='F')
-        hesssort = np.zeros((nd, 6, nsource), dtype=np.double, order='F')
+        potsort = np.zeros((nd, nsource), dtype=dtype, order='F')
+        gradsort = np.zeros((nd, 3, nsource), dtype=dtype, order='F')
+        hesssort = np.zeros((nd, 6, nsource), dtype=dtype, order='F')
+    elif ifpgh == 0:
+        potsort = np.zeros((nd, 1), dtype=dtype, order='F')
+        gradsort = np.zeros((nd, 3, 1), dtype=dtype, order='F')
+        hesssort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     else:
         raise ValueError(f"unknown ifpgh value: {ifpgh}")
 
     # src/Laplace/lfmm3d.f#L276-288
     if ifpghtarg == 1:
-        pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
-        gradtargsort = np.zeros((nd, 3, 1), dtype=np.double, order='F')
-        hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
+        pottargsort = np.zeros((nd, ntarg), dtype=dtype, order='F')
+        gradtargsort = np.zeros((nd, 3, 1), dtype=dtype, order='F')
+        hesstargsort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     elif ifpghtarg == 2:
-        pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
-        gradtargsort = np.zeros((nd, 3, ntarg), dtype=np.double, order='F')
-        hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
+        pottargsort = np.zeros((nd, ntarg), dtype=dtype, order='F')
+        gradtargsort = np.zeros((nd, 3, ntarg), dtype=dtype, order='F')
+        hesstargsort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     elif ifpghtarg == 3:
-        pottargsort = np.zeros((nd, ntarg), dtype=np.double, order='F')
-        gradtargsort = np.zeros((nd, 3, ntarg), dtype=np.double, order='F')
-        hesstargsort = np.zeros((nd, 6, ntarg), dtype=np.double, order='F')
+        pottargsort = np.zeros((nd, ntarg), dtype=dtype, order='F')
+        gradtargsort = np.zeros((nd, 3, ntarg), dtype=dtype, order='F')
+        hesstargsort = np.zeros((nd, 6, ntarg), dtype=dtype, order='F')
     elif ifpghtarg == 0:
-        pottargsort = np.zeros((nd, 1), dtype=np.double, order='F')
-        gradtargsort = np.zeros((nd, 3, 1), dtype=np.double, order='F')
-        hesstargsort = np.zeros((nd, 6, 1), dtype=np.double, order='F')
+        pottargsort = np.zeros((nd, 1), dtype=dtype, order='F')
+        gradtargsort = np.zeros((nd, 3, 1), dtype=dtype, order='F')
+        hesstargsort = np.zeros((nd, 6, 1), dtype=dtype, order='F')
     else:
         raise ValueError(f"unknown ifpghtarg value: {ifpghtarg}")
 
@@ -388,7 +399,7 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         dipvecsort = reorder(dipvec, isrc)
         dipvecsort *= b0inv2
     else:
-        dipvecsort = np.zeros((nd, 3, 0), dtype=np.double, order='F')
+        dipvecsort = np.zeros((nd, 3, 0), dtype=dtype, order='F')
 
     # src/Laplace/lfmm3d.f#L435
     targsort = reorder(targ, itarg)
@@ -400,8 +411,6 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
 
     # src/Helmholtz/hfmm3d.f#L411
     zkfmm = np.complex128(zk * b0)
-
-    laplace = (zk == 0)
 
     if laplace:
         # src/Laplace/lfmm3d.f#L467
@@ -527,11 +536,9 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         pottarg *= 1/(4 * np.pi)
     if ifpghtarg >= 2:
         gradtarg = reorder_inv(gradtargsort, itarg).reshape(3, -1)
-        gradtarg *= b0inv
         gradtarg *= b0inv / (4 * np.pi)
     if ifpghtarg >= 3:
         hesstarg = reorder_inv(hesstargsort, itarg).reshape(9, -1)
-        hesstarg *= b0inv2
         hesstarg *= b0inv2 / (4 * np.pi)
 
     return pot, grad, hess, pottarg, gradtarg, hesstarg

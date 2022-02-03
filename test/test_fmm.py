@@ -15,12 +15,13 @@ from sumpy.kernel import LaplaceKernel, HelmholtzKernel
 from boxtree.fmm3d.fmm import FMM3DExpansionWrangler, FMM3DTreeIndependentDataForWrangler 
 
 
-def test_fmm(ctx_factory):
+@pytest.mark.parametrize("knl", (HelmholtzKernel(3), LaplaceKernel(3)))
+def test_fmm(ctx_factory, knl):
     ctx = ctx_factory()
     queue = cl.CommandQueue(ctx)
     
     dims = 3
-    nparticles = 500
+    nparticles = 1000
     eps = 1e-5
     
     np_rng = default_rng(10)
@@ -31,8 +32,8 @@ def test_fmm(ctx_factory):
         for i in range(dims)])
     
     rng = PhiloxGenerator(ctx, seed=15)
-    charge = rng.normal(queue, nparticles, dtype=np.float64).get(
-            queue).reshape((1, nparticles))
+    charge_device = rng.normal(queue, nparticles, dtype=np.float64)
+    charge = charge_device.get(queue).reshape((1, nparticles))
     dipvec = np.asfortranarray(
             rng.normal(queue, (1, 3, nparticles), dtype=np.float64).get(queue))
     
@@ -47,25 +48,27 @@ def test_fmm(ctx_factory):
     trav = device_trav.get(queue=queue)
     tree = trav.tree
     
-    knl = LaplaceKernel(3)
+    source_kernels = (knl,)
+    target_kernels = (knl,)
+    extra_kwargs = {}
+    if isinstance(knl, HelmholtzKernel):
+        extra_kwargs["k"] = 0.1
     
     data = FMM3DTreeIndependentDataForWrangler(ctx,
-        target_kernels=(knl,), source_kernels=(knl,), strength_usage=(0,))
-    wrangler = FMM3DExpansionWrangler(data, trav, source_extra_kwargs={},
-                kernel_extra_kwargs={}, eps=eps)
-    
-    pot = drive_fmm(wrangler, charge)
-    
-    source = np.array([row for row in tree.sources])
-    
-    pot_ref = np.zeros(nparticles, dtype=np.double)
-    for i in range(nparticles):
-        for j in range(nparticles):
-            if i == j:
-                continue
-            x = particles_host[:, i]
-            y = particles_host[:, j]
-            pot_ref[i] += charge[0, j]/(np.linalg.norm(x - y) * 4 * np.pi)
-    
+        target_kernels=target_kernels, source_kernels=source_kernels,
+        strength_usage=(0,))
+    wrangler = FMM3DExpansionWrangler(data, trav,
+                source_extra_kwargs=extra_kwargs,
+                kernel_extra_kwargs=extra_kwargs, eps=eps)
+
+    from sumpy import P2EFromSingleBox, E2PFromSingleBox, P2P
+    extra_kwargs["target_to_source"] = np.arange(nparticles, dtype=np.int32)
+    p2p = P2P(ctx, target_kernels=target_kernels,
+            source_kernels=source_kernels,
+            exclude_self=True)
+
+    pot, = drive_fmm(wrangler, charge)
+    _, (pot_ref,) = p2p(queue, particles, particles, (charge_device,),
+            out_host=True, **extra_kwargs)
+
     assert np.max(np.abs(pot_ref - pot)) < eps
-    
