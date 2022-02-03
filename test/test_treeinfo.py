@@ -38,9 +38,10 @@ def get_test_data(ndiv, ctx):
             rng.normal(queue, (1, 3, nparticles), dtype=np.float64).get(queue))
 
     tb = TreeBuilder(ctx)
-    device_tree, _ = tb(queue, particles, max_particles_in_box=ndiv, kind='adaptive',
-                 skip_prune=False,
-                 bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
+    device_tree, _ = tb(
+        queue, particles, max_particles_in_box=ndiv, kind='adaptive',
+        skip_prune=False,
+        bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
 
     tg = FMMTraversalBuilder(ctx)
     device_trav, _ = tg(queue, device_tree)

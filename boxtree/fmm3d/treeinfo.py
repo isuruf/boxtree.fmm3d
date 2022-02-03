@@ -1,5 +1,5 @@
 import numpy as np
-from boxtree.fmm3d.fortran import pts_tree_sort, pts_tree_build, pts_tree_mem
+from boxtree.fmm3d.fortran import pts_tree_sort
 from collections import deque
 
 _child_mapping = [1, 5, 3, 7, 2, 6, 4, 8]
@@ -23,13 +23,13 @@ def fmm3d_tree_build(tree, trav):
     nlevels = tree.nlevels - 1
     nboxes_pruned = tree.nboxes
 
-    box_levels_pruned = tree.box_levels
+    # box_levels_pruned = tree.box_levels
     box_parent_ids_pruned = tree.box_parent_ids
     box_child_ids_pruned = tree.box_child_ids[:, :nboxes_pruned]
     coll_starts_pruned = trav.colleagues_starts
     coll_lists_pruned = trav.colleagues_lists
     box_centers_pruned = tree.box_centers[:, :nboxes_pruned]
-    level_start_box_nrs_pruned = tree.level_start_box_nrs
+    # level_start_box_nrs_pruned = tree.level_start_box_nrs
 
     box_id_mapping = np.zeros_like(box_parent_ids_pruned)
 
@@ -183,6 +183,7 @@ def fmm3d_tree_build(tree, trav):
 
     treecenters = np.asfortranarray(box_centers)
     """
+    from boxtree.fmm3d.fortran import pts_tree_build, pts_tree_mem
     nlevels_ref = np.array([0], dtype=np.int32)
     nboxes_ref = np.array([0], dtype=np.int32)
     ltree_ref = np.array([0], dtype=np.int64)
@@ -262,15 +263,23 @@ def fmm3d_tree_build(tree, trav):
         centers=treecenters,
     )
 
-    pts_tree_sort(n=nsource, xys=source, ixy=isrc, ixyse=isrcse,
-                  **pts_tree_sort_kwargs)
-
-    isrc, isrcse = pts_tree_sort2(nsource, tree, trav, id_to_pruned_id_mapping,
-                                  nboxes, box_child_ids)
-
-    if ntarg > 0:
-        pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
+    if 1:
+        isrc, isrcse = pts_tree_sort2(
+                nsource, tree, trav,
+                id_to_pruned_id_mapping, nboxes, box_child_ids,
+                is_source=True)
+        if ntarg > 0:
+            itarg, itargcse = pts_tree_sort2(
+                ntarg, tree, trav,
+                id_to_pruned_id_mapping, nboxes, box_child_ids,
+                is_source=False)
+    else:
+        pts_tree_sort(n=nsource, xys=source, ixy=isrc, ixyse=isrcse,
                       **pts_tree_sort_kwargs)
+
+        if ntarg > 0:
+            pts_tree_sort(n=ntarg, xys=targ, ixy=itarg, ixyse=itargse,
+                          **pts_tree_sort_kwargs)
 
     pts_tree_sort(n=nexpc, xys=expc, ixy=iexpc, ixyse=iexpcse,
                   **pts_tree_sort_kwargs)
@@ -317,7 +326,7 @@ def compute_colleagues(nboxes, box_parent_ids, box_child_ids, box_centers,
 
 
 def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
-                   box_child_ids):
+                   box_child_ids, is_source):
     ixy = np.zeros(n, dtype=np.int32)
     ixyse = np.zeros((2, nboxes), dtype=np.int32)
     box_depth_first_ordering = np.zeros(nboxes, dtype=np.int32) * (-1)
@@ -335,9 +344,14 @@ def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
             if child_id != 0:
                 boxes_stack.append(child_id)
 
-    box_source_starts = tree.box_source_starts
-    box_source_counts_cumul = tree.box_source_counts_cumul
-    box_source_counts_nonchild = tree.box_source_counts_nonchild
+    if is_source:
+        box_starts = tree.box_source_starts
+        box_counts_cumul = tree.box_source_counts_cumul
+        box_counts_nonchild = tree.box_source_counts_nonchild
+    else:
+        box_starts = tree.box_target_starts
+        box_counts_cumul = tree.box_target_counts_cumul
+        box_counts_nonchild = tree.box_target_counts_nonchild
 
     count = 1
     for box_id in box_depth_first_ordering:
@@ -345,10 +359,10 @@ def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
         if box_pruned_id == -1:
             ixyse[:, box_id] = [count + 1, count]
         else:
-            npoints = box_source_counts_cumul[box_pruned_id]
+            npoints = box_counts_cumul[box_pruned_id]
             ixyse[:, box_id] = [count, count + npoints - 1]
-            npoints_nonchild = box_source_counts_nonchild[box_pruned_id]
-            point_starts = box_source_starts[box_pruned_id]
+            npoints_nonchild = box_counts_nonchild[box_pruned_id]
+            point_starts = box_starts[box_pruned_id]
             if npoints_nonchild != 0:
                 ixy[count - 1: count - 1 + npoints_nonchild] = \
                         np.arange(point_starts + 1,
