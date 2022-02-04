@@ -600,6 +600,6 @@ if __name__ == "__main__":
                 continue
             x = source[:, i]
             y = source[:, j]
-            pot2[i] += charge[0, j]/np.linalg.norm(x - y)
+            pot2[i] += charge[0, j]/(np.linalg.norm(x - y) * 4 * np.pi)
 
     print(np.max(np.abs(pot2-pot)))
