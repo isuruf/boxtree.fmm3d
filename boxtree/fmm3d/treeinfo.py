@@ -303,7 +303,6 @@ def compute_colleagues(nboxes, box_parent_ids, box_child_ids, box_centers,
 
     for box_id in range(9, nboxes):
         parent_id = box_parent_ids[box_id]
-        grandparent_id = box_parent_ids[parent_id]
         center = box_centers[:, box_id]
         level = box_levels[box_id]
         boxsize = boxsizes[level]

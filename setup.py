@@ -39,21 +39,25 @@ else:
 exts = [Extension(
     name="boxtree.fmm3d.fortran",
     sources=sources,
-    f2py_options=["only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort", "lfmm3d",
-        "pts_tree_build", "pts_tree_mem", "l3dterms", "h3dterms", "mpalloc", ":"],
+    f2py_options=[
+        "only:", "lfmm3dmain", "hfmm3dmain", "pts_tree_sort",
+        "lfmm3d", "pts_tree_build", "pts_tree_mem", "l3dterms", "h3dterms",
+        "mpalloc", ":"],
     libraries=libraries,
     library_dirs=library_dirs,
     extra_link_args=["-fopenmp"],
-    extra_f77_compile_args=["-std=legacy", "-fopenmp", "-fPIC",
+    extra_f77_compile_args=[
+        "-std=legacy", "-fopenmp", "-fPIC",
         "-O3", "-funroll-loops", "-Wno-unused-variable", "-Wno-tabs",
-        "-Wno-conversion", "-Wno-maybe-uninitialized", "-Wno-unused-dummy-argument",
-        "-Wno-unused-label", "-O0", "-g"],
+        "-Wno-conversion", "-Wno-maybe-uninitialized",
+        "-Wno-unused-dummy-argument", "-Wno-unused-label", "-O0", "-g"],
     )]
 
 setup(
     name="boxtree.fmm3d",
     ext_modules=exts,
     packages=find_namespace_packages(include=["boxtree.*"]),
-    install_requires=["boxtree", "sumpy", "pyopencl", "sympy",
+    install_requires=[
+        "boxtree", "sumpy", "pyopencl", "sympy",
         "pymbolic", "pytools", "numpy"],
 )

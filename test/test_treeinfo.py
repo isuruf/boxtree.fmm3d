@@ -56,8 +56,8 @@ def get_test_data(ndiv, ctx, nparticles):
 def test_treeinfo(ctx_factory, nparticles):
     ctx = ctx_factory()
     ndiv = 40
-    tree, trav, charge, dipvec, particles_np = get_test_data(ndiv, ctx,
-        nparticles)
+    tree, trav, charge, dipvec, particles_np = get_test_data(
+        ndiv, ctx, nparticles)
     itree, ltree, ipointer, treecenters, boxsize, \
         source, nsource, targ, ntarg, expc, nexpc, \
         isrc, itarg, iexpc, isrcse, itargse, iexpcse, \
