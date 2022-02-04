@@ -309,11 +309,9 @@ def compute_colleagues(nboxes, box_parent_ids, box_child_ids, box_centers,
         boxsize = boxsizes[level]
         count_coll = 0
         for i in range(ncolleagues[parent_id]):
-            parent_neighbour_id = icolleagues[parent_id, i]
-            if parent_neighbour_id == 0:
-                continue
+            parent_colleague_id = icolleagues[parent_id, i]
             for j in range(8):
-                cousin_id = box_child_ids[j, parent_neighbour_id]
+                cousin_id = box_child_ids[j, parent_colleague_id]
                 if cousin_id == 0:
                     continue
                 cousin_center = box_centers[:, cousin_id]
