@@ -19,9 +19,9 @@ class FMM3DExpansionOrderFinder:
 
         elif isinstance(kernel, HelmholtzKernel):
             b0 = tree.root_extent
-            zk = kernel_args[kernel.helmholtz_k_name]
+            zk = dict(kernel_args)[kernel.helmholtz_k_name]
             zkfmm = np.complex128(zk * b0)
-            boxsize = b0 / 2 ** level
+            boxsize = 1.0 / 2 ** level
             h3dterms(boxsize, zkfmm, self.eps, nterms[0:1])
 
         return nterms[0] + self.extra_order

@@ -1,10 +1,9 @@
 from boxtree.fmm3d.treeinfo import fmm3d_tree_build
-from boxtree.fmm3d.fortran import (
-    l3dterms, h3dterms, mpalloc,
-    lfmm3dmain, hfmm3dmain)
+from boxtree.fmm3d.fortran import mpalloc, lfmm3dmain, hfmm3dmain
 from boxtree.fmm import (
     ExpansionWranglerInterface,
     TreeIndependentDataForWrangler)
+from boxtree.fmm3d.level_to_order import FMM3DExpansionOrderFinder
 from sumpy.kernel import (
     LaplaceKernel, HelmholtzKernel,
     KernelWrapper, AxisSourceDerivative, DirectionalSourceDerivative,
@@ -160,8 +159,10 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
             ifpgh = 0
 
         pot, grad, hess, pottarg, gradtarg, hesstarg = \
-            _run_fmm(self.tree, self.traversal, charge, dipvec,
-                     ifdipole, ifcharge, ifpgh, ifpghtarg, self.zk, self.eps)
+            _run_fmm(self.tree_indep.base_kernel,
+                     self.tree, self.traversal, charge, dipvec,
+                     ifdipole, ifcharge, ifpgh, ifpghtarg, self.zk, self.eps,
+                     self.tree_indep.fmm_level_to_order)
 
         if not self.tree.sources_are_targets:
             pot, grad, hess = pottarg, gradtarg, hesstarg
@@ -265,7 +266,8 @@ def assemble_potential(kernel, pot, grad, hess, targets, kernel_extra_kwargs):
 
 class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
     def __init__(self, cl_context,
-                 target_kernels, source_kernels, strength_usage):
+                 target_kernels, source_kernels, strength_usage,
+                 fmm_level_to_order=None):
         self.cl_context = cl_context
         self.target_kernels = target_kernels
         self.source_kernels = source_kernels
@@ -273,6 +275,7 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
 
         self.base_kernel = self.source_kernels[0].get_base_kernel()
         self.is_helmholtz = isinstance(self.base_kernel, HelmholtzKernel)
+        self.fmm_level_to_order = fmm_level_to_order
 
         self.dipole_vec_names = []
 
@@ -312,8 +315,8 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
             self.target_deriv_count = max(self.target_deriv_count, deriv_count)
 
 
-def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
-             ifpghtarg, zk, eps):
+def _run_fmm(knl, tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
+             ifpghtarg, zk, eps, fmm_level_to_order=None):
     # number of fmms
     nd = 1
     # flag for periodic implmentations. Currently unused
@@ -421,13 +424,12 @@ def _run_fmm(tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         scales[scales > 1] = 1
 
     nterms = np.empty(nlevels + 1, dtype=np.int32)
+
+    if fmm_level_to_order is None:
+        fmm_level_to_order = FMM3DExpansionOrderFinder(eps)
+
     for i in range(nlevels + 1):
-        if laplace:
-            # src/Laplace/lfmm3d.f#L392
-            l3dterms(eps, nterms[i:i+1])
-        else:
-            # src/Helmholtz/hfmm3d.f#L428
-            h3dterms(boxsize[i], zkfmm, eps, nterms[i:i+1])
+        nterms[i] = fmm_level_to_order(knl, {"k": zk}, tree, i)
 
     nmax = np.max(nterms)
     lmptemp = (nmax+1)*(2*nmax+1)*2*nd
@@ -550,11 +552,12 @@ if __name__ == "__main__":
 
     dims = 3
     nparticles = 500
+    knl = LaplaceKernel(dims)
 
     from numpy.random import default_rng
     np_rng = default_rng(10)
-    vals = np_rng.random((3, nparticles - 2), dtype=np.double)
-    # vals = np_rng.dirichlet((10, 5, 2), (nparticles - 2)).T
+    # vals = np_rng.random((3, nparticles - 2), dtype=np.double)
+    vals = np_rng.dirichlet((10, 5, 2), (nparticles - 2)).T
     particles_np = [
         np.append(vals[0], [0.999999, 0.000001]),
         np.append(vals[1], [0.999999, 0.000001]),
@@ -570,14 +573,17 @@ if __name__ == "__main__":
     rng = PhiloxGenerator(ctx, seed=15)
     charge = rng.normal(queue, nparticles, dtype=np.float64).get(
             queue).reshape((1, nparticles))
+    # charge = np.zeros((1, nparticles))
+    # charge[0, 1] = 1
     dipvec = np.asfortranarray(
             rng.normal(queue, (1, 3, nparticles), dtype=np.float64).get(queue))
 
-    ndiv = 40
+    ndiv = 100
     from boxtree import TreeBuilder
     tb = TreeBuilder(ctx)
     device_tree, _ = tb(
-        queue, particles, max_particles_in_box=ndiv, kind='adaptive',
+        queue, particles, max_particles_in_box=ndiv,
+        kind='adaptive-level-restricted',
         bbox=np.array([[0, 1], [0, 1], [0, 1]], dtype=np.double))
 
     from boxtree.traversal import FMMTraversalBuilder
@@ -588,8 +594,8 @@ if __name__ == "__main__":
     tree = trav.tree
 
     pot, grad, hess, pottarg, gradtarg, hesstarg = \
-        _run_fmm(tree, trav, charge, dipvec,
-                 ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=1e-5)
+        _run_fmm(knl, tree, trav, charge, dipvec,
+                 ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=3e-3)
 
     source = np.array([row for row in tree.sources])
 
