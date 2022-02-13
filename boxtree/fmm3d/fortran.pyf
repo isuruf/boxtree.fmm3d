@@ -4,7 +4,7 @@
 python module fortran ! in 
     interface  ! in :fortran
         subroutine lfmm3d(nd,eps,nsource,source,ifcharge,charge,ifdipole,dipvec,iper,ifpgh,pot,grad,hess,ntarg,targ,ifpghtarg,pottarg,gradtarg,hesstarg,ier) ! in :fortran:FMM3D/src/Laplace/lfmm3d.f
-            integer, optional,check(shape(charge,0)==nd),depend(charge) :: nd=shape(charge,0)
+            integer, optional,check(shape(charge, 0) == nd),depend(charge) :: nd=shape(charge, 0)
             double precision :: eps
             integer :: nsource
             double precision dimension(3,*) :: source
@@ -25,40 +25,40 @@ python module fortran ! in
             double precision dimension(nd,6,*),depend(nd) :: hesstarg
             integer :: ier
         end subroutine lfmm3d
-        subroutine lfmm3dmain(nd,eps,nsource,sourcesort,ifcharge,chargesort,ifdipole,dipvecsort,ntarg,targsort,nexpc,expcsort,iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,itree,ltree,ipointer,ndiv,nlevels,nboxes,iper,boxsize,centers,isrcse,itargse,iexpcse,rscales,laddr,nterms,ifpgh,pot,grad,hess,ifpghtarg,pottarg,gradtarg,hesstarg,ntj,tsort,scjsort,ifnear,ier) ! in :fortran:FMM3D/src/Laplace/lfmm3d.f
-            integer, optional,check(shape(chargesort,0)==nd),depend(chargesort) :: nd=shape(chargesort,0)
+        subroutine lfmm3dmain(nd,eps,nsource,sourcesort,ifcharge,chargesort,ifdipole,dipvecsort,ntarg,targsort,nexpc,expcsort,iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,itree,ltree,ipointer,ndiv,nlevels,nboxes,iper,boxsize,centers,isrcse,itargse,iexpcse,rscales,laddr,nterms,ifpgh,pot,grad,hess,ifpghtarg,pottarg,gradtarg,hesstarg,ntj,tsort,scjsort,ifnear,timeinfo,ier) ! in :fortran:FMM3D/src/Laplace/lfmm3d.f
+            integer, optional,check(shape(chargesort, 0) == nd),depend(chargesort) :: nd=shape(chargesort, 0)
             double precision :: eps
-            integer, optional,check(shape(sourcesort,1)==nsource),depend(sourcesort) :: nsource=shape(sourcesort,1)
+            integer, optional,check(shape(sourcesort, 1) == nsource),depend(sourcesort) :: nsource=shape(sourcesort, 1)
             double precision dimension(3,nsource) :: sourcesort
             integer :: ifcharge
             double precision dimension(nd,*) :: chargesort
             integer :: ifdipole
             double precision dimension(nd,3,*),depend(nd) :: dipvecsort
-            integer, optional,check(shape(targsort,1)==ntarg),depend(targsort) :: ntarg=shape(targsort,1)
+            integer, optional,check(shape(targsort, 1) == ntarg),depend(targsort) :: ntarg=shape(targsort, 1)
             double precision dimension(3,ntarg) :: targsort
-            integer, optional,check(shape(expcsort,1)==nexpc),depend(expcsort) :: nexpc=shape(expcsort,1)
+            integer, optional,check(shape(expcsort, 1) == nexpc),depend(expcsort) :: nexpc=shape(expcsort, 1)
             double precision dimension(3,nexpc) :: expcsort
             integer*8 dimension(2,nboxes) :: iaddr
             double precision dimension(lmptot) :: rmlexp
-            integer*8, optional,check(len(rmlexp)>=lmptot),depend(rmlexp) :: lmptot=len(rmlexp)
+            integer*8, optional,check(shape(rmlexp, 0) == lmptot),depend(rmlexp) :: lmptot=shape(rmlexp, 0)
             double precision dimension(lmptemp) :: mptemp
             double precision dimension(lmptemp),depend(lmptemp) :: mptemp2
-            integer, optional,check(len(mptemp)>=lmptemp),depend(mptemp) :: lmptemp=len(mptemp)
+            integer, optional,check(shape(mptemp, 0) == lmptemp),depend(mptemp) :: lmptemp=shape(mptemp, 0)
             integer dimension(ltree) :: itree
-            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
+            integer*8, optional,check(shape(itree, 0) == ltree),depend(itree) :: ltree=shape(itree, 0)
             integer*8 dimension(8) :: ipointer
             integer :: ndiv
-            integer, optional,check((len(boxsize)-1)>=nlevels),depend(boxsize) :: nlevels=(len(boxsize)-1)
-            integer, optional,check(shape(iaddr,1)==nboxes),depend(iaddr) :: nboxes=shape(iaddr,1)
+            integer, optional,check(shape(boxsize, 0) == 1 + nlevels),depend(boxsize) :: nlevels=-1 + shape(boxsize, 0)
+            integer, optional,check(shape(iaddr, 1) == nboxes),depend(iaddr) :: nboxes=shape(iaddr, 1)
             integer :: iper
-            double precision dimension(nlevels + 1) :: boxsize
+            double precision dimension(1 + nlevels) :: boxsize
             double precision dimension(3,nboxes),depend(nboxes) :: centers
             integer dimension(2,nboxes),depend(nboxes) :: isrcse
             integer dimension(2,nboxes),depend(nboxes) :: itargse
             integer dimension(2,nboxes),depend(nboxes) :: iexpcse
-            double precision dimension(nlevels + 1),depend(nlevels) :: rscales
-            integer dimension(2,nlevels + 1),depend(nlevels) :: laddr
-            integer dimension(nlevels + 1),depend(nlevels) :: nterms
+            double precision dimension(1 + nlevels),depend(nlevels) :: rscales
+            integer dimension(2,1 + nlevels),depend(nlevels) :: laddr
+            integer dimension(1 + nlevels),depend(nlevels) :: nterms
             integer :: ifpgh
             double precision dimension(nd,*),depend(nd) :: pot
             double precision dimension(nd,3,*),depend(nd) :: grad
@@ -67,14 +67,15 @@ python module fortran ! in
             double precision dimension(nd,*),depend(nd) :: pottarg
             double precision dimension(nd,3,*),depend(nd) :: gradtarg
             double precision dimension(nd,6,*),depend(nd) :: hesstarg
-            integer, optional,check((shape(tsort,1)-1)==ntj),depend(tsort) :: ntj=(shape(tsort,1)-1)
-            double complex dimension(nd,ntj + 1,2 * ntj + 1,nexpc),depend(nd,nexpc) :: tsort
+            integer, optional,check(shape(tsort, 1) == 1 + ntj),depend(tsort) :: ntj=shape(tsort, 1)
+            double complex dimension(nd,1 + ntj,1 + 2 * ntj,nexpc),depend(nd,nexpc) :: tsort
             double precision dimension(nexpc),depend(nexpc) :: scjsort
             integer :: ifnear
+            double precision dimension(6) :: timeinfo
             integer :: ier
         end subroutine lfmm3dmain
         subroutine lfmm3dexpc_direct(nd,istart,iend,jstart,jend,source,ifcharge,charge,ifdipole,dipvec,expc,texps,scj,ntj,wlege,nlege) ! in :fortran:FMM3D/src/Laplace/lfmm3d.f
-            integer, optional,check(shape(charge,0)==nd),depend(charge) :: nd=shape(charge,0)
+            integer, optional,check(shape(charge, 0) == nd),depend(charge) :: nd=shape(charge, 0)
             integer :: istart
             integer :: iend
             integer :: jstart
@@ -85,17 +86,17 @@ python module fortran ! in
             integer :: ifdipole
             double precision dimension(nd,3,*),depend(nd) :: dipvec
             double precision dimension(3,*) :: expc
-            double complex dimension(nd,ntj + 1,2 * ntj + 1,*),depend(nd) :: texps
+            double complex dimension(nd,1 + ntj,1 + 2 * ntj,*),depend(nd) :: texps
             double precision dimension(*) :: scj
-            integer, optional,check((shape(texps,1)-1)==ntj),depend(texps) :: ntj=(shape(texps,1)-1)
+            integer, optional,check(shape(texps, 1) == 1 + ntj),depend(texps) :: ntj=(-1 + shape(texps, 1)) / 2
             double precision dimension(*) :: wlege
             integer :: nlege
         end subroutine lfmm3dexpc_direct
         subroutine hfmm3d(nd,eps,zk,nsource,source,ifcharge,charge,ifdipole,dipvec,iper,ifpgh,pot,grad,hess,ntarg,targ,ifpghtarg,pottarg,gradtarg,hesstarg,ier) ! in :fortran:FMM3D/src/Helmholtz/hfmm3d.f
-            integer, optional,check(shape(charge,0)==nd),depend(charge) :: nd=shape(charge,0)
+            integer, optional,check(shape(charge, 0) == nd),depend(charge) :: nd=shape(charge, 0)
             double precision :: eps
             double complex :: zk
-            integer, optional,check(shape(source,1)==nsource),depend(source) :: nsource=shape(source,1)
+            integer, optional,check(shape(source, 1) == nsource),depend(source) :: nsource=shape(source, 1)
             double precision dimension(3,nsource) :: source
             integer :: ifcharge
             double complex dimension(nd,*) :: charge
@@ -106,7 +107,7 @@ python module fortran ! in
             double complex dimension(nd,*),depend(nd) :: pot
             double complex dimension(nd,3,*),depend(nd) :: grad
             double complex dimension(nd,6,*),depend(nd) :: hess
-            integer, optional,check(shape(targ,1)==ntarg),depend(targ) :: ntarg=shape(targ,1)
+            integer, optional,check(shape(targ, 1) == ntarg),depend(targ) :: ntarg=shape(targ, 1)
             double precision dimension(3,ntarg) :: targ
             integer :: ifpghtarg
             double complex dimension(nd,3,*),depend(nd) :: pottarg
@@ -114,42 +115,42 @@ python module fortran ! in
             double complex dimension(nd,6,*),depend(nd) :: hesstarg
             integer :: ier
         end subroutine hfmm3d
-        subroutine hfmm3dmain(nd,eps,zk,nsource,sourcesort,ifcharge,chargesort,ifdipole,dipvecsort,ntarg,targsort,nexpc,expcsort,radssort,iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,itree,ltree,ipointer,ndiv,nlevels,nboxes,iper,boxsize,centers,isrcse,itargse,iexpcse,rscales,laddr,nterms,ifpgh,pot,grad,hess,ifpghtarg,pottarg,gradtarg,hesstarg,ntj,jsort,scjsort,ifnear,ier) ! in :fortran:FMM3D/src/Helmholtz/hfmm3d.f
-            integer, optional,check(shape(chargesort,0)==nd),depend(chargesort) :: nd=shape(chargesort,0)
+        subroutine hfmm3dmain(nd,eps,zk,nsource,sourcesort,ifcharge,chargesort,ifdipole,dipvecsort,ntarg,targsort,nexpc,expcsort,radssort,iaddr,rmlexp,lmptot,mptemp,mptemp2,lmptemp,itree,ltree,ipointer,ndiv,nlevels,nboxes,iper,boxsize,centers,isrcse,itargse,iexpcse,rscales,laddr,nterms,ifpgh,pot,grad,hess,ifpghtarg,pottarg,gradtarg,hesstarg,ntj,jsort,scjsort,ifnear,timeinfo,ier) ! in :fortran:FMM3D/src/Helmholtz/hfmm3d.f
+            integer, optional,check(shape(chargesort, 0) == nd),depend(chargesort) :: nd=shape(chargesort, 0)
             double precision :: eps
             double complex :: zk
-            integer, optional,check(shape(sourcesort,1)==nsource),depend(sourcesort) :: nsource=shape(sourcesort,1)
+            integer, optional,check(shape(sourcesort, 1) == nsource),depend(sourcesort) :: nsource=shape(sourcesort, 1)
             double precision dimension(3,nsource) :: sourcesort
             integer :: ifcharge
             double complex dimension(nd,*) :: chargesort
             integer :: ifdipole
             double complex dimension(nd,3,*),depend(nd) :: dipvecsort
-            integer, optional,check(shape(targsort,1)==ntarg),depend(targsort) :: ntarg=shape(targsort,1)
+            integer, optional,check(shape(targsort, 1) == ntarg),depend(targsort) :: ntarg=shape(targsort, 1)
             double precision dimension(3,ntarg) :: targsort
-            integer, optional,check(shape(expcsort,1)==nexpc),depend(expcsort) :: nexpc=shape(expcsort,1)
+            integer, optional,check(shape(expcsort, 1) == nexpc),depend(expcsort) :: nexpc=shape(expcsort, 1)
             double precision dimension(3,nexpc) :: expcsort
             double precision dimension(nexpc),depend(nexpc) :: radssort
             integer*8 dimension(2,nboxes) :: iaddr
             double precision dimension(lmptot) :: rmlexp
-            integer*8, optional,check(len(rmlexp)>=lmptot),depend(rmlexp) :: lmptot=len(rmlexp)
+            integer*8, optional,check(shape(rmlexp, 0) == lmptot),depend(rmlexp) :: lmptot=shape(rmlexp, 0)
             double precision dimension(lmptemp) :: mptemp
             double precision dimension(lmptemp),depend(lmptemp) :: mptemp2
-            integer, optional,check(len(mptemp)>=lmptemp),depend(mptemp) :: lmptemp=len(mptemp)
+            integer, optional,check(shape(mptemp, 0) == lmptemp),depend(mptemp) :: lmptemp=shape(mptemp, 0)
             integer dimension(ltree) :: itree
-            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
+            integer*8, optional,check(shape(itree, 0) == ltree),depend(itree) :: ltree=shape(itree, 0)
             integer*8 dimension(8) :: ipointer
             integer :: ndiv
-            integer, optional,check((len(boxsize)-1)>=nlevels),depend(boxsize) :: nlevels=(len(boxsize)-1)
-            integer, optional,check(shape(iaddr,1)==nboxes),depend(iaddr) :: nboxes=shape(iaddr,1)
+            integer, optional,check(shape(boxsize, 0) == 1 + nlevels),depend(boxsize) :: nlevels=-1 + shape(boxsize, 0)
+            integer, optional,check(shape(iaddr, 1) == nboxes),depend(iaddr) :: nboxes=shape(iaddr, 1)
             integer :: iper
-            double precision dimension(nlevels + 1) :: boxsize
+            double precision dimension(1 + nlevels) :: boxsize
             double precision dimension(3,nboxes),depend(nboxes) :: centers
             integer dimension(2,nboxes),depend(nboxes) :: isrcse
             integer dimension(2,nboxes),depend(nboxes) :: itargse
             integer dimension(2,nboxes),depend(nboxes) :: iexpcse
-            double precision dimension(nlevels + 1),depend(nlevels) :: rscales
-            integer dimension(2,nlevels + 1),depend(nlevels) :: laddr
-            integer dimension(nlevels + 1),depend(nlevels) :: nterms
+            double precision dimension(1 + nlevels),depend(nlevels) :: rscales
+            integer dimension(2,1 + nlevels),depend(nlevels) :: laddr
+            integer dimension(1 + nlevels),depend(nlevels) :: nterms
             integer :: ifpgh
             double complex dimension(nd,*),depend(nd) :: pot
             double complex dimension(nd,3,*),depend(nd) :: grad
@@ -158,14 +159,15 @@ python module fortran ! in
             double complex dimension(nd,*),depend(nd) :: pottarg
             double complex dimension(nd,3,*),depend(nd) :: gradtarg
             double complex dimension(nd,6,*),depend(nd) :: hesstarg
-            integer, optional,check((shape(jsort,1)-1)==ntj),depend(jsort) :: ntj=(shape(jsort,1)-1)
-            double complex dimension(nd,ntj + 1,2 * ntj + 1,nexpc),depend(nd,nexpc) :: jsort
+            integer, optional,check(shape(jsort, 1) == 1 + ntj),depend(jsort) :: ntj=shape(jsort, 1)
+            double complex dimension(nd,1 + ntj,1 + 2 * ntj,nexpc),depend(nd,nexpc) :: jsort
             double precision dimension(nexpc),depend(nexpc) :: scjsort
             integer :: ifnear
+            double precision dimension(6) :: timeinfo
             integer :: ier
         end subroutine hfmm3dmain
         subroutine hfmm3dexpc_direct(nd,zk,istart,iend,jstart,jend,source,ifcharge,charge,ifdipole,dipvec,targ,texps,scj,ntj,wlege,nlege) ! in :fortran:FMM3D/src/Helmholtz/hfmm3d.f
-            integer, optional,check(shape(charge,0)==nd),depend(charge) :: nd=shape(charge,0)
+            integer, optional,check(shape(charge, 0) == nd),depend(charge) :: nd=shape(charge, 0)
             double complex :: zk
             integer :: istart
             integer :: iend
@@ -177,17 +179,17 @@ python module fortran ! in
             integer :: ifdipole
             double complex dimension(nd,3,*),depend(nd) :: dipvec
             double precision dimension(3,*) :: targ
-            double complex dimension(nd,ntj + 1,2 * ntj + 1,*),depend(nd) :: texps
+            double complex dimension(nd,1 + ntj,1 + 2 * ntj,*),depend(nd) :: texps
             double precision dimension(*) :: scj
-            integer, optional,check((shape(texps,1)-1)==ntj),depend(texps) :: ntj=(shape(texps,1)-1)
-            double precision dimension(nlege + 1,nlege + 1) :: wlege
-            integer, optional,check((shape(wlege,0)-1)==nlege),depend(wlege) :: nlege=(shape(wlege,0)-1)
+            integer, optional,check(shape(texps, 1) == 1 + ntj),depend(texps) :: ntj=(-1 + shape(texps, 1)) / 2
+            double precision dimension(1 + nlege,1 + nlege) :: wlege
+            integer, optional,check(shape(wlege, 0) == 1 + nlege),depend(wlege) :: nlege=-1 + shape(wlege, 0)
         end subroutine hfmm3dexpc_direct
         subroutine pts_tree_mem(src,ns,targ,nt,idivflag,ndiv,nlmin,nlmax,ifunif,iper,nlevels,nboxes,ltree) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
             double precision dimension(3,ns) :: src
-            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            integer, optional,check(shape(src, 1) == ns),depend(src) :: ns=shape(src, 1)
             double precision dimension(3,nt) :: targ
-            integer, optional,check(shape(targ,1)==nt),depend(targ) :: nt=shape(targ,1)
+            integer, optional,check(shape(targ, 1) == nt),depend(targ) :: nt=shape(targ, 1)
             integer :: idivflag
             integer :: ndiv
             integer :: nlmin
@@ -200,30 +202,30 @@ python module fortran ! in
         end subroutine pts_tree_mem
         subroutine pts_tree_build(src,ns,targ,nt,idivflag,ndiv,nlmin,nlmax,ifunif,iper,nlevels,nboxes,ltree,itree,iptr,centers,boxsize) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
             double precision dimension(3,ns) :: src
-            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            integer, optional,check(shape(src, 1) == ns),depend(src) :: ns=shape(src, 1)
             double precision dimension(3,nt) :: targ
-            integer, optional,check(shape(targ,1)==nt),depend(targ) :: nt=shape(targ,1)
+            integer, optional,check(shape(targ, 1) == nt),depend(targ) :: nt=shape(targ, 1)
             integer :: idivflag
             integer :: ndiv
             integer :: nlmin
             integer :: nlmax
             integer :: ifunif
             integer :: iper
-            integer, optional,check((len(boxsize)-1)>=nlevels),depend(boxsize) :: nlevels=(len(boxsize)-1)
-            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
-            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
+            integer, optional,check(shape(boxsize, 0) == 1 + nlevels),depend(boxsize) :: nlevels=-1 + shape(boxsize, 0)
+            integer, optional,check(shape(centers, 1) == nboxes),depend(centers) :: nboxes=shape(centers, 1)
+            integer*8, optional,check(shape(itree, 0) == ltree),depend(itree) :: ltree=shape(itree, 0)
             integer dimension(ltree) :: itree
             integer*8 dimension(8) :: iptr
             double precision dimension(3,nboxes) :: centers
-            double precision dimension(nlevels + 1) :: boxsize
+            double precision dimension(1 + nlevels) :: boxsize
         end subroutine pts_tree_build
         subroutine sort_pts_to_children(ibox,nboxes,centers,ichild,src,ns,isrc,isrcse) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
             integer :: ibox
-            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            integer, optional,check(shape(centers, 1) == nboxes),depend(centers) :: nboxes=shape(centers, 1)
             double precision dimension(3,nboxes) :: centers
             integer dimension(8,nboxes),depend(nboxes) :: ichild
             double precision dimension(3,ns) :: src
-            integer, optional,check(shape(src,1)==ns),depend(src) :: ns=shape(src,1)
+            integer, optional,check(shape(src, 1) == ns),depend(src) :: ns=shape(src, 1)
             integer dimension(ns),depend(ns) :: isrc
             integer dimension(2,nboxes),depend(nboxes) :: isrcse
         end subroutine sort_pts_to_children
@@ -231,11 +233,11 @@ python module fortran ! in
             double precision dimension(3,nbmax) :: centers
             integer :: nlevels
             integer :: nboxes
-            double precision dimension(nlmax + 1) :: boxsize
-            integer, optional,check(shape(centers,1)==nbmax),depend(centers) :: nbmax=shape(centers,1)
-            integer, optional,check((len(boxsize)-1)>=nlmax),depend(boxsize) :: nlmax=(len(boxsize)-1)
+            double precision dimension(1 + nlmax) :: boxsize
+            integer, optional,check(shape(centers, 1) == nbmax),depend(centers) :: nbmax=shape(centers, 1)
+            integer, optional,check(shape(boxsize, 0) == 1 + nlmax),depend(boxsize) :: nlmax=-1 + shape(boxsize, 0)
             integer :: iper
-            integer dimension(2,nlmax + 1),depend(nlmax) :: laddr
+            integer dimension(2,1 + nlmax),depend(nlmax) :: laddr
             integer dimension(nbmax),depend(nbmax) :: ilevel
             integer dimension(nbmax),depend(nbmax) :: iparent
             integer dimension(nbmax),depend(nbmax) :: nchild
@@ -244,11 +246,11 @@ python module fortran ! in
             integer dimension(27,nbmax),depend(nbmax) :: nbors
         end subroutine pts_tree_fix_lr
         subroutine pts_tree_reorg(nboxes,centers,nlevels,laddr,laddrtail,ilevel,iparent,nchild,ichild,iflag) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
-            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            integer, optional,check(shape(centers, 1) == nboxes),depend(centers) :: nboxes=shape(centers, 1)
             double precision dimension(3,nboxes) :: centers
-            integer, optional,check((shape(laddr,1)-1)==nlevels),depend(laddr) :: nlevels=(shape(laddr,1)-1)
-            integer dimension(2,nlevels + 1) :: laddr
-            integer dimension(2,nlevels + 1),depend(nlevels) :: laddrtail
+            integer, optional,check(shape(laddr, 1) == 1 + nlevels),depend(laddr) :: nlevels=-1 + shape(laddr, 1)
+            integer dimension(2,1 + nlevels) :: laddr
+            integer dimension(2,1 + nlevels),depend(nlevels) :: laddrtail
             integer dimension(nboxes),depend(nboxes) :: ilevel
             integer dimension(nboxes),depend(nboxes) :: iparent
             integer dimension(nboxes),depend(nboxes) :: nchild
@@ -256,11 +258,11 @@ python module fortran ! in
             integer dimension(nboxes),depend(nboxes) :: iflag
         end subroutine pts_tree_reorg
         subroutine pts_tree_sort(n,xys,itree,ltree,nboxes,nlevels,iptr,centers,ixy,ixyse) ! in :fortran:FMM3D/src/Common/pts_tree3d.f
-            integer, optional,check(shape(xys,1)==n),depend(xys) :: n=shape(xys,1)
+            integer, optional,check(shape(xys, 1) == n),depend(xys) :: n=shape(xys, 1)
             double precision dimension(3,n) :: xys
             integer dimension(ltree) :: itree
-            integer*8, optional,check(len(itree)>=ltree),depend(itree) :: ltree=len(itree)
-            integer, optional,check(shape(centers,1)==nboxes),depend(centers) :: nboxes=shape(centers,1)
+            integer*8, optional,check(shape(itree, 0) == ltree),depend(itree) :: ltree=shape(itree, 0)
+            integer, optional,check(shape(centers, 1) == nboxes),depend(centers) :: nboxes=shape(centers, 1)
             integer :: nlevels
             integer*8 dimension(8) :: iptr
             double precision dimension(3,nboxes) :: centers
@@ -315,62 +317,62 @@ python module fortran ! in
         end subroutine h3dterms_far
         subroutine mpalloc(nd,laddr,iaddr,nlevels,lmptot,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
             integer :: nd
-            integer dimension(2,nlevels + 1) :: laddr
+            integer dimension(2,1 + nlevels) :: laddr
             integer*8 dimension(2,*) :: iaddr
-            integer, optional,check((shape(laddr,1)-1)==nlevels),depend(laddr) :: nlevels=(shape(laddr,1)-1)
+            integer, optional,check(shape(laddr, 1) == 1 + nlevels),depend(laddr) :: nlevels=-1 + shape(laddr, 1)
             integer*8 dimension(1) :: lmptot
-            integer dimension(nlevels + 1),depend(nlevels) :: nterms
+            integer dimension(1 + nlevels),depend(nlevels) :: nterms
         end subroutine mpalloc
         subroutine dreorderf(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer, optional,check(shape(arr, 0) == ndim),depend(arr) :: ndim=shape(arr, 0)
             integer :: n
             double precision dimension(ndim,*) :: arr
             double precision dimension(ndim,*),depend(ndim) :: arrsort
             integer dimension(*) :: iarr
         end subroutine dreorderf
         subroutine dreorderi(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer, optional,check(shape(arr, 0) == ndim),depend(arr) :: ndim=shape(arr, 0)
             integer :: n
             double precision dimension(ndim,*) :: arr
             double precision dimension(ndim,*),depend(ndim) :: arrsort
             integer dimension(*) :: iarr
         end subroutine dreorderi
         subroutine ireorderf(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer, optional,check(shape(arr, 0) == ndim),depend(arr) :: ndim=shape(arr, 0)
             integer :: n
             integer dimension(ndim,*) :: arr
             integer dimension(ndim,*),depend(ndim) :: arrsort
             integer dimension(*) :: iarr
         end subroutine ireorderf
         subroutine ireorderi(ndim,n,arr,arrsort,iarr) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(arr,0)==ndim),depend(arr) :: ndim=shape(arr,0)
+            integer, optional,check(shape(arr, 0) == ndim),depend(arr) :: ndim=shape(arr, 0)
             integer :: n
             integer dimension(ndim,*) :: arr
             integer dimension(ndim,*),depend(ndim) :: arrsort
             integer dimension(*) :: iarr
         end subroutine ireorderi
         subroutine drescale(n,a,r) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(len(a)>=n),depend(a) :: n=len(a)
+            integer, optional,check(shape(a, 0) == n),depend(a) :: n=shape(a, 0)
             real*8 dimension(n) :: a
             real*8 :: r
         end subroutine drescale
         subroutine mpzero(nd,mpole,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(mpole,0)==nd),depend(mpole) :: nd=shape(mpole,0)
-            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpole
-            integer, optional,check((shape(mpole,1)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,1)-1)
+            integer, optional,check(shape(mpole, 0) == nd),depend(mpole) :: nd=(-1 + shape(mpole, 0)) / 2
+            double complex dimension(nd,1 + nterms,1 + 2 * nterms) :: mpole
+            integer, optional,check(shape(mpole, 1) == 1 + nterms),depend(mpole) :: nterms=(-1 + shape(mpole, 1)) / 2
         end subroutine mpzero
         subroutine mpadd(nd,mpolein,mpoleout,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(mpolein,0)==nd),depend(mpolein) :: nd=shape(mpolein,0)
-            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpolein
-            double complex dimension(nd,nterms + 1,2 * nterms + 1),depend(nd,nterms,nterms) :: mpoleout
-            integer, optional,check((shape(mpolein,1)-1)==nterms),depend(mpolein) :: nterms=(shape(mpolein,1)-1)
+            integer, optional,check(shape(mpolein, 0) == nd),depend(mpolein) :: nd=(-1 + shape(mpolein, 0)) / 2
+            double complex dimension(nd,1 + nterms,1 + 2 * nterms) :: mpolein
+            double complex dimension(nd,1 + nterms,1 + 2 * nterms),depend(nd,nterms) :: mpoleout
+            integer, optional,check(shape(mpolein, 1) == 1 + nterms),depend(mpolein) :: nterms=(-1 + shape(mpolein, 1)) / 2
         end subroutine mpadd
         subroutine mpscale(nd,nterms,mpolein,rsc,mpoleout) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check(shape(mpolein,0)==nd),depend(mpolein) :: nd=shape(mpolein,0)
-            integer, optional,check((shape(mpolein,1)-1)==nterms),depend(mpolein) :: nterms=(shape(mpolein,1)-1)
-            double complex dimension(nd,nterms + 1,2 * nterms + 1) :: mpolein
-            double precision dimension(nterms + 1),depend(nterms) :: rsc
-            double complex dimension(nd,nterms + 1,2 * nterms + 1),depend(nd,nterms,nterms) :: mpoleout
+            integer, optional,check(shape(mpolein, 0) == nd),depend(mpolein) :: nd=(-1 + shape(mpolein, 0)) / 2
+            integer, optional,check(shape(mpolein, 1) == 1 + nterms),depend(mpolein) :: nterms=(-1 + shape(mpolein, 1)) / 2
+            double complex dimension(nd,1 + nterms,1 + 2 * nterms) :: mpolein
+            double precision dimension(1 + nterms),depend(nterms) :: rsc
+            double complex dimension(nd,1 + nterms,1 + 2 * nterms),depend(nd,nterms) :: mpoleout
         end subroutine mpscale
         subroutine cart2polar(zat,r,theta,phi) ! in :fortran:FMM3D/src/Common/fmmcommon.f
             real*8 dimension(3) :: zat
@@ -379,37 +381,37 @@ python module fortran ! in
             real*8 :: phi
         end subroutine cart2polar
         subroutine getsqrtbinomialcoeffs(n,dc) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check((shape(dc,0)-1)==n),depend(dc) :: n=(shape(dc,0)-1)
-            real*8 dimension(n + 1,n + 1) :: dc
+            integer, optional,check(shape(dc, 0) == 1 + n),depend(dc) :: n=-1 + shape(dc, 0)
+            real*8 dimension(1 + n,1 + n) :: dc
         end subroutine getsqrtbinomialcoeffs
         subroutine getpwrotmat(nterms,carray,rdpi2,rdmpi2,rdsq3,rdmsq3,dc) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check((shape(carray,0)-1)/(4)==nterms),depend(carray) :: nterms=(shape(carray,0)-1)/(4)
-            double precision dimension(4 * nterms + 1,4 * nterms + 1) :: carray
-            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdpi2
-            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdmpi2
-            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdsq3
-            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1),depend(nterms,nterms,nterms) :: rdmsq3
-            double precision dimension(4 * nterms + 1,4 * nterms + 1),depend(nterms,nterms) :: dc
+            integer, optional,check(shape(carray, 0) == 1 + 4 * nterms),depend(carray) :: nterms=(-1 + shape(carray, 0)) / 4
+            double precision dimension(1 + 4 * nterms,1 + 4 * nterms) :: carray
+            double precision dimension(1 + nterms,1 + nterms,1 + 2 * nterms),depend(nterms) :: rdpi2
+            double precision dimension(1 + nterms,1 + nterms,1 + 2 * nterms),depend(nterms) :: rdmpi2
+            double precision dimension(1 + nterms,1 + nterms,1 + 2 * nterms),depend(nterms) :: rdsq3
+            double precision dimension(1 + nterms,1 + nterms,1 + 2 * nterms),depend(nterms) :: rdmsq3
+            double precision dimension(1 + 4 * nterms,1 + 4 * nterms),depend(nterms) :: dc
         end subroutine getpwrotmat
         subroutine zflip(nterms,mpole,mrotate) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check((shape(mpole,0)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,0)-1)
-            double complex dimension(nterms + 1,nterms + 1) :: mpole
-            double complex dimension(nterms + 1,nterms + 1),depend(nterms,nterms) :: mrotate
+            integer, optional,check(shape(mpole, 0) == 1 + nterms),depend(mpole) :: nterms=-1 + shape(mpole, 0)
+            double complex dimension(1 + nterms,1 + nterms) :: mpole
+            double complex dimension(1 + nterms,1 + nterms),depend(nterms) :: mrotate
         end subroutine zflip
         subroutine prinout(mpole,ll,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            double complex dimension(nterms + 1,nterms + 1) :: mpole
+            double complex dimension(1 + nterms,1 + nterms) :: mpole
             integer :: ll
-            integer, optional,check((shape(mpole,0)-1)==nterms),depend(mpole) :: nterms=(shape(mpole,0)-1)
+            integer, optional,check(shape(mpole, 0) == 1 + nterms),depend(mpole) :: nterms=-1 + shape(mpole, 0)
         end subroutine prinout
         subroutine bnlcft(c,sqc,nterms) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            double precision dimension(nterms + 1,nterms + 1) :: c
-            double precision dimension(nterms + 1,nterms + 1),depend(nterms,nterms) :: sqc
-            integer, optional,check((shape(c,0)-1)==nterms),depend(c) :: nterms=(shape(c,0)-1)
+            double precision dimension(1 + nterms,1 + nterms) :: c
+            double precision dimension(1 + nterms,1 + nterms),depend(nterms) :: sqc
+            integer, optional,check(shape(c, 0) == 1 + nterms),depend(c) :: nterms=-1 + shape(c, 0)
         end subroutine bnlcft
         subroutine fstrtn(nterms,d,sqc,theta) ! in :fortran:FMM3D/src/Common/fmmcommon.f
-            integer, optional,check((shape(d,0)-1)==nterms),depend(d) :: nterms=(shape(d,0)-1)
-            double precision dimension(nterms + 1,nterms + 1,2 * nterms + 1) :: d
-            double precision dimension(4 * nterms + 1,4 * nterms + 1),depend(nterms,nterms) :: sqc
+            integer, optional,check(shape(d, 0) == 1 + nterms),depend(d) :: nterms=(-1 + shape(d, 0)) / 2
+            double precision dimension(1 + nterms,1 + nterms,1 + 2 * nterms) :: d
+            double precision dimension(1 + 4 * nterms,1 + 4 * nterms),depend(nterms) :: sqc
             double precision :: theta
         end subroutine fstrtn
         subroutine geterrstr(ifcharge,ifdipole,ifpgh,ifpghtarg,str1,len1) ! in :fortran:FMM3D/src/Common/fmmcommon.f
@@ -423,5 +425,6 @@ python module fortran ! in
     end interface 
 end python module fortran
 
-! This file was auto-generated with f2py (version:1.21.4).
-! See http://cens.ioc.ee/projects/f2py2e/
+! This file was auto-generated with f2py (version:1.22.0).
+! See:
+! https://web.archive.org/web/20140822061353/http://cens.ioc.ee/projects/f2py2e
