@@ -37,6 +37,7 @@ def fmm3d_tree_build(tree, trav):
     boxsize[0] = tree.root_extent
     for i in range(nlevels):
         boxsize[i + 1] = boxsize[i] / 2
+    print(boxsize)
 
     new_box_counter = 0
     box_id_mapping[0] = 0
@@ -267,7 +268,7 @@ def fmm3d_tree_build(tree, trav):
         isrc, isrcse = pts_tree_sort2(
                 nsource, tree, trav,
                 id_to_pruned_id_mapping, nboxes, box_child_ids,
-                is_source=True)
+                is_source=True, box_centers=box_centers, box_levels=box_levels)
         if ntarg > 0:
             itarg, itargcse = pts_tree_sort2(
                 ntarg, tree, trav,
@@ -323,7 +324,7 @@ def compute_colleagues(nboxes, box_parent_ids, box_child_ids, box_centers,
 
 
 def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
-                   box_child_ids, is_source):
+                   box_child_ids, is_source, box_centers, box_levels):
     ixy = np.zeros(n, dtype=np.int32)
     ixyse = np.zeros((2, nboxes), dtype=np.int32)
     box_depth_first_ordering = np.zeros(nboxes, dtype=np.int32) * (-1)
@@ -343,6 +344,7 @@ def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
 
     if is_source:
         box_starts = tree.box_source_starts
+        orig_box_centers = tree.box_centers
         box_counts_cumul = tree.box_source_counts_cumul
         box_counts_nonchild = tree.box_source_counts_nonchild
     else:
@@ -365,5 +367,15 @@ def pts_tree_sort2(n, tree, trav, id_to_pruned_id_mapping, nboxes,
                         np.arange(point_starts + 1,
                                   point_starts + 1 + npoints_nonchild)
             count += npoints_nonchild
+
+    if 0:
+        for box_id in range(nboxes):
+            start, end = ixyse[:, box_id]
+            for ipoint_new in range(start - 1, end):
+                i = ixy[ipoint_new] - 1
+                point = np.array([tree.sources[0][i], tree.sources[1][i], tree.sources[2][i]])
+                center = box_centers[:, box_id]
+                if not (abs(point-center) < 0.5/2**box_levels[box_id]).all():
+                    1/0
 
     return ixy, ixyse

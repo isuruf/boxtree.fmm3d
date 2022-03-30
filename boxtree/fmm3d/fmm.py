@@ -52,11 +52,12 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
         expansions, but not source particles.
     """
     def __init__(self, tree_indep, traversal, source_extra_kwargs,
-                 kernel_extra_kwargs, eps):
+                 kernel_extra_kwargs, eps, fmm_level_to_order=None):
         super().__init__(tree_indep, traversal)
         self.source_extra_kwargs = source_extra_kwargs
         self.kernel_extra_kwargs = kernel_extra_kwargs
         self.eps = eps
+        self.fmm_level_to_order = fmm_level_to_order
 
         with cl.CommandQueue(tree_indep.cl_context) as queue:
             self.dipole_vecs = {
@@ -158,11 +159,11 @@ class FMM3DExpansionWrangler(ExpansionWranglerInterface):
             ifpghtarg = self.tree_indep.target_deriv_count + 1
             ifpgh = 0
 
-        pot, grad, hess, pottarg, gradtarg, hesstarg = \
+        pot, grad, hess, pottarg, gradtarg, hesstarg, timeinfo = \
             _run_fmm(self.tree_indep.base_kernel,
                      self.tree, self.traversal, charge, dipvec,
                      ifdipole, ifcharge, ifpgh, ifpghtarg, self.zk, self.eps,
-                     self.tree_indep.fmm_level_to_order)
+                     self.fmm_level_to_order)
 
         if not self.tree.sources_are_targets:
             pot, grad, hess = pottarg, gradtarg, hesstarg
@@ -266,8 +267,7 @@ def assemble_potential(kernel, pot, grad, hess, targets, kernel_extra_kwargs):
 
 class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
     def __init__(self, cl_context,
-                 target_kernels, source_kernels, strength_usage,
-                 fmm_level_to_order=None):
+            target_kernels, source_kernels, strength_usage):
         self.cl_context = cl_context
         self.target_kernels = target_kernels
         self.source_kernels = source_kernels
@@ -275,7 +275,6 @@ class FMM3DTreeIndependentDataForWrangler(TreeIndependentDataForWrangler):
 
         self.base_kernel = self.source_kernels[0].get_base_kernel()
         self.is_helmholtz = isinstance(self.base_kernel, HelmholtzKernel)
-        self.fmm_level_to_order = fmm_level_to_order
 
         self.dipole_vec_names = []
 
@@ -452,6 +451,7 @@ def _run_fmm(knl, tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
     scjsort = np.empty(1, dtype=np.double)
     radssort = np.empty(1, dtype=np.double)
 
+    timeinfo = np.zeros(6, dtype=np.double)
     ier = np.zeros(1, dtype=np.int32) * -1
 
     fmm3dmain_kwargs = dict(
@@ -499,7 +499,8 @@ def _run_fmm(knl, tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         ntj=np.int32(0),
         scjsort=scjsort,
         ifnear=np.int32(ifnear),
-        ier=ier)
+        ier=ier,
+        timeinfo=timeinfo)
 
     assert ier == 0
 
@@ -543,7 +544,10 @@ def _run_fmm(knl, tree, trav, charge, dipvec, ifdipole, ifcharge, ifpgh,
         hesstarg = reorder_inv(hesstargsort, itarg).reshape(9, -1)
         hesstarg *= b0inv2 / (4 * np.pi)
 
-    return pot, grad, hess, pottarg, gradtarg, hesstarg
+    print(f"{timeinfo=}")
+    print(f"{sum(timeinfo)=}")
+
+    return pot, grad, hess, pottarg, gradtarg, hesstarg, timeinfo
 
 
 if __name__ == "__main__":
@@ -593,7 +597,7 @@ if __name__ == "__main__":
     trav = device_trav.get(queue=queue)
     tree = trav.tree
 
-    pot, grad, hess, pottarg, gradtarg, hesstarg = \
+    pot, grad, hess, pottarg, gradtarg, hesstarg, timeinfo = \
         _run_fmm(knl, tree, trav, charge, dipvec,
                  ifdipole=0, ifcharge=1, ifpgh=1, ifpghtarg=0, zk=0, eps=3e-3)
 

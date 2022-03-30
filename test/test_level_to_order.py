@@ -15,7 +15,7 @@ class FakeTree:
         self.root_extent = root_extent
         self.stick_out_factor = stick_out_factor
 
-@pytest.mark.parametrize("knl", (HelmholtzKernel(3), LaplaceKernel(3)))
+@pytest.mark.parametrize("knl", (LaplaceKernel(3),))
 def test_level_to_order(ctx_factory, knl):
     ofind = FMM3DExpansionOrderFinder(1e-5)
 
@@ -23,6 +23,7 @@ def test_level_to_order(ctx_factory, knl):
     orders = [
         ofind(knl, frozenset([("k", 0.1)]), tree, level)
         for level in range(10)]
+    print(orders)
 
     if isinstance(knl, HelmholtzKernel):
         pytest.xfail("Helmholtz h3dterms fails, but it should not.")

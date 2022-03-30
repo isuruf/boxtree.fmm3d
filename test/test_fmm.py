@@ -23,7 +23,7 @@ def test_fmm(ctx_factory, knl):
     queue = cl.CommandQueue(ctx)
 
     dims = 3
-    nparticles = 1000
+    nparticles = 1000000
     eps = 1e-5
 
     np_rng = default_rng(10)
@@ -40,7 +40,7 @@ def test_fmm(ctx_factory, knl):
     #        rng.normal(queue, (1, 3, nparticles),
     #                   dtype=np.float64).get(queue))
 
-    ndiv = 40
+    ndiv = 1000
     tb = TreeBuilder(ctx)
     device_tree, _ = tb(
         queue, particles, max_particles_in_box=ndiv,
